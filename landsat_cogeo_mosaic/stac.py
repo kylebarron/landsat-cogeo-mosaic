@@ -42,7 +42,7 @@ import requests
 from shapely.geometry import box, shape
 from supermercado import burntiles
 
-from util import bbox_to_geojson
+from .util import bbox_to_geojson
 
 
 def _get_season(date, lat=0):

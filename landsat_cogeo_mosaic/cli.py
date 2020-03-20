@@ -5,7 +5,7 @@ from typing import List
 
 import click
 
-from mosaic import create_mosaic
+from .mosaic import create_mosaic
 
 
 @click.group()

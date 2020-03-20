@@ -36,7 +36,7 @@ import urllib
 from datetime import datetime
 from typing import Any, List, Tuple
 
-from stac import stac_to_mosaicJSON
+from .stac import stac_to_mosaicJSON
 
 
 def create_mosaic(
