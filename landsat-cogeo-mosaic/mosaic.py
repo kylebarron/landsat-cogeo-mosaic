@@ -33,47 +33,59 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import json
 import os
 import urllib
-from typing import Any, Tuple
+from datetime import datetime
+from typing import Any, List, Tuple
 
 from stac import stac_to_mosaicJSON
 
 
 def create_mosaic(
-        body: str,
-        minzoom: int = 7,
-        maxzoom: int = 12,
+        bounds: List[float],
+        min_cloud: float,
+        max_cloud: float,
+        min_date: str = "2013-01-01",
+        max_date: str = "2019-12-01",
+        min_zoom: int = 7,
+        max_zoom: int = 12,
         optimized_selection: bool = True,
         maximum_items_per_tile: int = 20,
-        stac_collection_limit: int = 500,
-        seasons: str = None,
-        tile_format: str = "png",
-        tile_scale: int = 1,
-        **kwargs: Any):
+        stac_collection_limit: int = None,
+        seasons: List[str] = None):
     """Create mosaic"""
-    body = json.loads(body)
-    print(body)
-
-    minzoom = int(minzoom) if isinstance(minzoom, str) else minzoom
-    maxzoom = int(maxzoom) if isinstance(maxzoom, str) else maxzoom
-    if isinstance(optimized_selection, str):
-        optimized_selection = (
-            False if optimized_selection in ["False", "false"] else True)
-
-    if seasons:
-        seasons = seasons.split(",")
-    else:
+    if seasons is None:
         seasons = ["spring", "summer", "autumn", "winter"]
 
-    body["query"].update({"eo:platform": {"eq": "landsat-8"}})
+    start = datetime.strptime(min_date,
+                              "%Y-%m-%d").strftime("%Y-%m-%dT00:00:00Z")
+    end = datetime.strptime(max_date, "%Y-%m-%d").strftime("%Y-%m-%dT23:59:59Z")
+
+    query = {
+        "bbox": bounds,
+        "time": f"{start}/{end}",
+        "query": {
+            "eo:sun_elevation": {
+                "gt": 0},
+            "landsat:tier": {
+                "eq": "T1"},
+            "collection": {
+                "eq": "landsat-8-l1"},
+            "eo:cloud_cover": {
+                "gte": min_cloud,
+                "lt": max_cloud},
+            "eo:platform": {
+                "eq": "landsat-8"}, },
+        "sort": [{
+            "field": "eo:cloud_cover",
+            "direction": "asc"}], }
 
     mosaic_definition = stac_to_mosaicJSON(
-        body,
-        minzoom=minzoom,
-        maxzoom=maxzoom,
+        query,
+        minzoom=min_zoom,
+        maxzoom=max_zoom,
         optimized_selection=optimized_selection,
         maximum_items_per_tile=maximum_items_per_tile,
         stac_collection_limit=stac_collection_limit,
         seasons=seasons,
     )
 
-    return print(json.dumps(mosaic_definition))
+    return mosaic_definition
