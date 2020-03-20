@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import itertools
 import json
 import os
+import sys
 from datetime import datetime
 from typing import Dict, Tuple
 
@@ -101,7 +102,7 @@ def stac_to_mosaicJSON(
     if not features:
         raise Exception(f"No asset found for query '{json.dumps(query)}'")
 
-    print(f"Found: {len(features)} scenes")
+    print(f"Found: {len(features)} scenes", file=sys.stderr)
 
     features = list(
         filter(
@@ -134,7 +135,7 @@ def stac_to_mosaicJSON(
     tiles = burntiles.burn([bbox_to_geojson(bounds)], minzoom)
     tiles = list(set(["{2}-{0}-{1}".format(*tile.tolist()) for tile in tiles]))
 
-    print(f"Number tiles: {len(tiles)}")
+    print(f"Number tiles: {len(tiles)}", file=sys.stderr)
 
     mosaic_definition = dict(
         mosaicjson="0.0.1",
@@ -181,7 +182,7 @@ def fetch_sat_api(query, stac_url: str = "https://sat-api.developmentseed.org"):
     if not meta.get("found"):
         return []
 
-    print(json.dumps(meta))
+    print(json.dumps(meta), file=sys.stderr)
 
     features = data["features"]
     if data["links"]:

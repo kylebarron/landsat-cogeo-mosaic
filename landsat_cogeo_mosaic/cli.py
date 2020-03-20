@@ -1,3 +1,4 @@
+import json
 import re
 from datetime import datetime
 from typing import List
@@ -91,7 +92,7 @@ def create(
         season):
 
     bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
-    create_mosaic(
+    mosaic = create_mosaic(
         bounds=bounds,
         min_cloud=min_cloud,
         max_cloud=max_cloud,
@@ -103,6 +104,7 @@ def create(
         maximum_items_per_tile=maximum_items_per_tile,
         stac_collection_limit=stac_collection_limit,
         seasons=season)
+    print(json.dumps(mosaic))
 
 
 main.add_command(create)
