@@ -41,6 +41,8 @@ import requests
 from shapely.geometry import box, shape
 from supermercado import burntiles
 
+from util import bbox_to_geojson
+
 
 def _get_season(date, lat=0):
     if lat > 0:
@@ -190,19 +192,3 @@ def fetch_sat_api(query, stac_url: str = "https://sat-api.developmentseed.org"):
         features = list(itertools.chain(features, fetch_sat_api(query)))
 
     return features
-
-
-def bbox_to_geojson(bbox: Tuple) -> Dict:
-    """Return bbox geojson feature."""
-    return {
-        "geometry": {
-            "type":
-                "Polygon",
-            "coordinates": [[
-                [bbox[0], bbox[3]],
-                [bbox[0], bbox[1]],
-                [bbox[2], bbox[1]],
-                [bbox[2], bbox[3]],
-                [bbox[0], bbox[3]], ]], },
-        "properties": {},
-        "type": "Feature", }
