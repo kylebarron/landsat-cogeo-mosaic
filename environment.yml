@@ -1,0 +1,12 @@
+name: landsat-cogeo-mosaic
+channels:
+  - conda-forge
+dependencies:
+  - click
+  - mercantile
+  - requests
+  - shapely
+  - supermercado
+  - pip
+  - pip:
+    - python-language-server[all]
