@@ -35,21 +35,24 @@ from datetime import datetime
 from typing import Any, Dict, List, Tuple
 
 import mercantile
-from shapely.geometry import box, shape
+from rtree import index
+from shapely.geometry import box, shape, asShape
 from supermercado import burntiles
 
 from .util import bbox_to_geojson
 
 
 def features_to_mosaicJSON(
-        features: List,
+        features: List[Dict],
+        quadkey_zoom: int = None,
+        bounds: List[float] = None,
         minzoom: int = 7,
         maxzoom: int = 12,
         optimized_selection: bool = True,
         maximum_items_per_tile: int = 20,
 ) -> Dict:
     """
-    Create a mosaicJSON from a stac request.
+    Create a mosaicJSON from stac features.
 
     Attributes
     ----------
@@ -68,58 +71,56 @@ def features_to_mosaicJSON(
     -------
     out : dict
         MosaicJSON definition.
-
     """
-    if optimized_selection:
-        dataset = []
-        prs = []
-        for item in features:
-            pr = item["properties"]["eo:column"] + "-" + item["properties"][
-                "eo:row"]
-            if pr not in prs:
-                prs.append(pr)
-                dataset.append(item)
-    else:
-        dataset = features
+    # Instantiate rtree
+    idx = index.Index()
 
-    if query.get("bbox"):
-        bounds = query["bbox"]
-    else:
-        bounds = burntiles.find_extrema(dataset)
+    # Insert features
+    for i in range(len(features)):
+        feature = features[i]
+        idx.insert(i, asShape(feature['geometry']).bounds)
 
-    for i in range(len(dataset)):
-        dataset[i]["geometry"] = shape(dataset[i]["geometry"])
+    # Find tiles at desired zoom
+    bounds = bounds or idx.bounds
+    quadkey_zoom = quadkey_zoom or minzoom
+    tiles = mercantile.tiles(*bounds, quadkey_zoom)
 
-    tiles = burntiles.burn([bbox_to_geojson(bounds)], minzoom)
-    tiles = list(set(["{2}-{0}-{1}".format(*tile.tolist()) for tile in tiles]))
+    # Define mosaic
+    mosaic_definition = {
+        'mosaicjson': "0.0.2",
+        'minzoom': minzoom,
+        'maxzoom': maxzoom,
+        'quadkey_zoom': quadkey_zoom,
+        'bounds': bounds,
+        'center': [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2,
+                   minzoom],
+        'tiles': {},
+    }
 
-    print(f"Number tiles: {len(tiles)}", file=sys.stderr)
-
-    mosaic_definition = dict(
-        mosaicjson="0.0.1",
-        minzoom=minzoom,
-        maxzoom=maxzoom,
-        bounds=bounds,
-        center=[(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2,
-                minzoom],
-        tiles={},
-    )
-
+    # Loop over tiles
     for tile in tiles:
-        z, x, y = list(map(int, tile.split("-")))
-        tile = mercantile.Tile(x=x, y=y, z=z)
-        quadkey = mercantile.quadkey(*tile)
-        geometry = box(*mercantile.bounds(tile))
-        intersect_dataset = list(
-            filter(lambda x: geometry.intersects(x["geometry"]), dataset))
-        if len(intersect_dataset):
-            # We limit the item per quadkey to 20
-            if maximum_items_per_tile:
-                intersect_dataset = intersect_dataset[0:maximum_items_per_tile]
+        quadkey = mercantile.quadkey(tile)
+        candidate_idx = list(idx.intersection(mercantile.bounds(tile)))
 
-            mosaic_definition["tiles"][quadkey] = [
-                scene["properties"]["landsat:product_id"]
-                for scene in intersect_dataset
-            ]
+        if not candidate_idx:
+            continue
+
+        # Retrieve actual features
+        candidates = [features[i] for i in candidate_idx]
+
+        # Filter exact intersections
+        tile_geom = box(*mercantile.bounds(tile))
+        assets = [
+            x for x in candidates
+            if tile_geom.intersects(asShape(x['geometry']))
+        ]
+
+        if not assets:
+            continue
+
+        # Add to mosaic definition
+        mosaic_definition["tiles"][quadkey] = [
+            scene["properties"]["landsat:product_id"] for scene in assets
+        ]
 
     return mosaic_definition
