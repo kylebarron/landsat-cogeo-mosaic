@@ -83,9 +83,9 @@ def main():
 @click.option(
     '--stac-collection-limit',
     type=int,
-    default=None,
+    default=500,
     show_default=True,
-    help='Limits the number of items returned by sat-api.')
+    help='Limits the number of items per page returned by sat-api.')
 def create(
         bounds, min_cloud, max_cloud, min_date, max_date, min_zoom, max_zoom,
         optimized_selection, maximum_items_per_tile, stac_collection_limit,
