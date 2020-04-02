@@ -5,6 +5,7 @@ from typing import List
 
 import click
 
+from .mosaic import features_to_mosaicJSON
 from .stac import _get_season, fetch_sat_api
 
 
@@ -147,8 +148,19 @@ def search(
     default=20,
     show_default=True,
     help='Limit number of scene per quadkey. Use 0 to use all items.')
-def create(min_zoom, max_zoom, optimized_selection, maximum_items_per_tile):
-    pass
+@click.argument('features', type=click.File())
+def create(
+        min_zoom, max_zoom, optimized_selection, maximum_items_per_tile,
+        features):
+
+    features = json.load(features)
+    mosaic = features_to_mosaicJSON(
+        features,
+        minzoom=min_zoom,
+        maxzoom=max_zoom,
+        optimized_selection=optimized_selection,
+        maximum_items_per_tile=maximum_items_per_tile)
+    print(json.dumps(mosaic, separators=(',', ':')))
 
 
 main.add_command(search)

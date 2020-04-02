@@ -50,7 +50,6 @@ def features_to_mosaicJSON(
         maxzoom: int = 12,
         optimized_selection: bool = True,
         maximum_items_per_tile: int = 20,
-        seasons: Tuple = ["spring", "summer", "autumn", "winter"],
 ) -> Dict:
     """
     Create a mosaicJSON from a stac request.
