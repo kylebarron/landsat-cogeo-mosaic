@@ -181,6 +181,9 @@ def fetch_sat_api(query, stac_url: str = "https://sat-api.developmentseed.org"):
     meta = data.get("meta", {})
     if not meta.get("found"):
         return []
+    else:
+        if meta['found'] >= 10000:
+            raise ValueError('Search too big; more than 10,000 results')
 
     print(json.dumps(meta), file=sys.stderr)
 
