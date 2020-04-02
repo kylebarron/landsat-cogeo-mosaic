@@ -1,5 +1,5 @@
 click
 mercantile
 requests
+rtree
 shapely
-supermercado

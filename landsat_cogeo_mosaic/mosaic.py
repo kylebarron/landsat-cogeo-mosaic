@@ -28,18 +28,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import json
-import os
 import sys
-import urllib
 from datetime import datetime
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List
 
 import mercantile
 from rtree import index
-from shapely.geometry import box, shape, asShape
-from supermercado import burntiles
-
-from .util import bbox_to_geojson
+from shapely.geometry import box, asShape
 
 
 def features_to_mosaicJSON(

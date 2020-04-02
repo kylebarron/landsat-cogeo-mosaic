@@ -5,8 +5,8 @@ dependencies:
   - click
   - mercantile
   - requests
+  - rtree
   - shapely
-  - supermercado
   - pip
   - pip:
     - python-language-server[all]
