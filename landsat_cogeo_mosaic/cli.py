@@ -5,7 +5,7 @@ from typing import List
 
 import click
 
-from .stac import fetch_sat_api
+from .stac import _get_season, fetch_sat_api
 
 
 @click.group()
@@ -64,6 +64,8 @@ def main():
 def search(
         bounds, min_cloud, max_cloud, min_date, max_date, stac_collection_limit,
         season):
+    """Retrieve features from sat-api
+    """
 
     bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
     if season is None:
@@ -104,6 +106,17 @@ def search(
         query['limit'] = stac_collection_limit
 
     features = fetch_sat_api(query)
+    if not features:
+        raise ValueError(f"No asset found for query '{json.dumps(query)}'")
+
+    features = list(
+        filter(
+            lambda x: _get_season(
+                x["properties"]["datetime"], max(x["bbox"][1], x["bbox"][3])) in
+            season,
+            features,
+        ))
+
     print(json.dumps(features, separators=(',', ':')))
 
 
