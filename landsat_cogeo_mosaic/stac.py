@@ -30,23 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import itertools
 import json
 import sys
-from datetime import datetime
 
 import requests
-
-
-def _get_season(date, lat=0):
-    if lat > 0:
-        season_names = {1: "winter", 2: "spring", 3: "summer", 4: "autumn"}
-    else:
-        season_names = {4: "winter", 3: "spring", 2: "summer", 1: "autumn"}
-
-    month = datetime.strptime(date[0:10], "%Y-%m-%d").month
-
-    # from https://stackoverflow.com/questions/44124436/python-datetime-to-season
-    idx = (month % 12 + 3) // 3
-
-    return season_names[idx]
 
 
 def fetch_sat_api(query, stac_url: str = "https://sat-api.developmentseed.org"):

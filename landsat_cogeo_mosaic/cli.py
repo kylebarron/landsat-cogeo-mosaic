@@ -1,12 +1,11 @@
 import json
 import re
 from datetime import datetime
-from typing import List
 
 import click
 
 from .mosaic import features_to_mosaicJSON
-from .stac import _get_season, fetch_sat_api
+from .stac import fetch_sat_api, filter_season
 
 
 @click.group()
@@ -69,9 +68,6 @@ def search(
     """
 
     bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
-    if season is None:
-        season = ["spring", "summer", "autumn", "winter"]
-
     start = datetime.strptime(min_date,
                               "%Y-%m-%d").strftime("%Y-%m-%dT00:00:00Z")
     end = datetime.strptime(max_date, "%Y-%m-%d").strftime("%Y-%m-%dT23:59:59Z")
@@ -110,15 +106,12 @@ def search(
     if not features:
         raise ValueError(f"No asset found for query '{json.dumps(query)}'")
 
-    features = list(
-        filter(
-            lambda x: _get_season(
-                x["properties"]["datetime"], max(x["bbox"][1], x["bbox"][3])) in
-            season,
-            features,
-        ))
+    if season:
+        features = filter_season(features, season)
 
-    print(json.dumps(features, separators=(',', ':')))
+    # Write to stdout as newline delimited features
+    for feature in features:
+        print(json.dumps(feature, separators=(',', ':')))
 
 
 @click.command()
@@ -143,23 +136,24 @@ def search(
     show_default=True,
     help='Limit one Path-Row scene per quadkey.')
 @click.option(
-    '--maximum-items-per-tile',
-    type=int,
-    default=20,
+    '--season',
+    multiple=True,
+    default=None,
     show_default=True,
-    help='Limit number of scene per quadkey. Use 0 to use all items.')
-@click.argument('features', type=click.File())
-def create(
-        min_zoom, max_zoom, optimized_selection, maximum_items_per_tile,
-        features):
+    type=click.Choice(["spring", "summer", "autumn", "winter"]),
+    help='Season, can provide multiple')
+@click.argument('lines', type=click.File())
+def create(min_zoom, max_zoom, optimized_selection, season, lines):
+    features = [json.loads(l) for l in lines]
 
-    features = json.load(features)
+    if season:
+        features = filter_season(features, season)
+
     mosaic = features_to_mosaicJSON(
         features,
         minzoom=min_zoom,
         maxzoom=max_zoom,
-        optimized_selection=optimized_selection,
-        maximum_items_per_tile=maximum_items_per_tile)
+        optimized_selection=optimized_selection)
     print(json.dumps(mosaic, separators=(',', ':')))
 
 
