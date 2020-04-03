@@ -164,6 +164,11 @@ def optimize_assets(tile, assets):
         if tile_geom.area == 0:
             break
 
+        # If all assets are spent and the tile still not covered, raise
+        # exception
+        if len(assets) == 0:
+            raise ValueError(f'Not enough assets to cover {tile}')
+
     return final_assets
 
 
