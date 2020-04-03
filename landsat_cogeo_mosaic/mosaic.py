@@ -126,9 +126,10 @@ def features_to_mosaicJSON(
             assets = optimize_assets(tile, assets)
 
         # Add to mosaic definition
-        mosaic_definition["tiles"][quadkey] = [
-            scene["properties"]["landsat:product_id"] for scene in assets
-        ]
+        if assets:
+            mosaic_definition["tiles"][quadkey] = [
+                scene["properties"]["landsat:product_id"] for scene in assets
+            ]
 
     return mosaic_definition
 
@@ -145,6 +146,9 @@ def optimize_assets(tile, assets):
     general be possible in finite time, so this is a naive method that should
     work relatively well for this use case.
     """
+    if not assets:
+        return assets
+
     final_assets = []
     tile_geom = box(*mercantile.bounds(tile))
     assets = deepcopy(assets)
@@ -169,6 +173,7 @@ def optimize_assets(tile, assets):
         if len(assets) == 0:
             print(
                 f'Warning: Not enough assets to cover {tile}', file=sys.stderr)
+            break
 
     return final_assets
 

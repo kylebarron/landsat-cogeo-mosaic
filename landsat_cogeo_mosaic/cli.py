@@ -163,7 +163,8 @@ def search(
     help='Season, can provide multiple')
 @click.argument('lines', type=click.File())
 def create(
-        min_zoom, max_zoom, quadkey_zoom, optimized_selection, season, lines):
+        min_zoom, max_zoom, quadkey_zoom, bounds, optimized_selection, season,
+        lines):
     """Create MosaicJSON from STAC features
     """
     if bounds:
