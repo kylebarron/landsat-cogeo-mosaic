@@ -29,12 +29,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import json
 import sys
+from copy import deepcopy
 from datetime import datetime
 from typing import Dict, List
 
 import mercantile
 from rtree import index
-from shapely.geometry import box, asShape
+from shapely.geometry import Polygon, asShape, box
 
 
 def features_to_mosaicJSON(
@@ -44,7 +45,6 @@ def features_to_mosaicJSON(
         minzoom: int = 7,
         maxzoom: int = 12,
         optimized_selection: bool = True,
-        maximum_items_per_tile: int = 20,
 ) -> Dict:
     """
     Create a mosaicJSON from stac features.
@@ -58,9 +58,17 @@ def features_to_mosaicJSON(
     maxzoom : int, optional (default: 12)
         Mosaic Max Zoom.
     optimized_selection : bool, optional (default: true)
-        Limit one Path-Row scene per quadkey.
-    maximum_items_per_tile : int, optional (default: 20)
-        Limit number of scene per quadkey. Use 0 to use all items.
+        Attempt to optimize assets in tile.
+
+        This optimization implies _both_ that
+
+        - assets will be ordered in the MosaicJSON in order of sort of the
+          entire tile
+        - the total number of assets is kept to a minimum
+
+        Computing the absolute minimum of assets to cover the tile may not in
+        general be possible in finite time, so this is a naive method that
+        should work relatively well for this use case.
 
     Returns
     -------
@@ -113,9 +121,66 @@ def features_to_mosaicJSON(
         if not assets:
             continue
 
+        # Optimize assets to be added
+        if optimized_selection:
+            assets = optimize_assets(tile, assets)
+
         # Add to mosaic definition
         mosaic_definition["tiles"][quadkey] = [
             scene["properties"]["landsat:product_id"] for scene in assets
         ]
 
     return mosaic_definition
+
+
+def optimize_assets(tile, assets):
+    """Try to find the minimal number of assets to cover tile
+
+    This optimization implies _both_ that
+
+    - assets will be ordered in the MosaicJSON in order of sort of the entire tile
+    - the total number of assets is kept to a minimum
+
+    Computing the absolute minimum of assets to cover the tile may not in
+    general be possible in finite time, so this is a naive method that should
+    work relatively well for this use case.
+    """
+    final_assets = []
+    tile_geom = box(*mercantile.bounds(tile))
+    assets = deepcopy(assets)
+
+    while True:
+        # Sort by cover of region of tile that is left
+        assets = sort_assets_by_cover(tile_geom, assets)
+
+        # Remove top asset and add to final_assets
+        top_asset = assets.pop(0)
+        final_assets.append(top_asset)
+
+        # Recompute tile_geom, removing overlap with top_asset
+        tile_geom = tile_geom.difference(asShape(top_asset['geometry']))
+
+        # When total area is covered, stop
+        if tile_geom.area == 0:
+            break
+
+    return final_assets
+
+
+def sort_assets_by_cover(tile_geom: Polygon, assets: List[Dict]) -> List[Dict]:
+    """Sort assets by cover percent of tile
+    """
+    # Add overlap percent to properties
+    new_assets = []
+    for asset in assets:
+        asset['properties']['tile_overlap'] = pct_overlap(tile_geom, asset)
+        new_assets.append(asset)
+
+    # Sort by tile overlap
+    return sorted(
+        new_assets, key=lambda k: k['properties']['tile_overlap'], reverse=True)
+
+
+def pct_overlap(tile_geom: Polygon, asset: Dict) -> float:
+    asset_geom = asShape(asset['geometry'])
+    return tile_geom.intersection(asset_geom).area / tile_geom.area
