@@ -5,7 +5,8 @@ from datetime import datetime
 import click
 
 from .mosaic import features_to_mosaicJSON
-from .stac import fetch_sat_api, filter_season
+from .stac import fetch_sat_api
+from .util import filter_season
 
 
 @click.group()
