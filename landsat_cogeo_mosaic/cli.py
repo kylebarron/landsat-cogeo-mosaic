@@ -130,11 +130,29 @@ def search(
     show_default=True,
     help='Maximum zoom')
 @click.option(
+    '--quadkey-zoom',
+    type=int,
+    required=False,
+    default=None,
+    show_default=True,
+    help=
+    'Zoom level used for quadkeys in MosaicJSON. Lower value means more assets per tile, but a smaller MosaicJSON file. Higher value means fewer assets per tile but a larger MosaicJSON file. Must be between min zoom and max zoom, inclusive.'
+)
+@click.option(
+    '-b',
+    '--bounds',
+    type=str,
+    required=False,
+    default=None,
+    help='Comma-separated bounding box: "west, south, east, north"')
+@click.option(
     '--optimized-selection/--no-optimized-selection',
     is_flag=True,
     default=True,
     show_default=True,
-    help='Limit one Path-Row scene per quadkey.')
+    help=
+    'Attempt to optimize assets in tile. This optimization implies that 1) assets will be ordered in the MosaicJSON in order of cover of the entire tile and 2) the total number of assets is kept to a minimum.'
+)
 @click.option(
     '--season',
     multiple=True,
@@ -143,14 +161,22 @@ def search(
     type=click.Choice(["spring", "summer", "autumn", "winter"]),
     help='Season, can provide multiple')
 @click.argument('lines', type=click.File())
-def create(min_zoom, max_zoom, optimized_selection, season, lines):
+def create(
+        min_zoom, max_zoom, quadkey_zoom, optimized_selection, season, lines):
+    """Create MosaicJSON from STAC features
+    """
+    if bounds:
+        bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
+
     features = [json.loads(l) for l in lines]
 
     if season:
         features = filter_season(features, season)
 
     mosaic = features_to_mosaicJSON(
-        features,
+        features=features,
+        quadkey_zoom=quadkey_zoom,
+        bounds=bounds,
         minzoom=min_zoom,
         maxzoom=max_zoom,
         optimized_selection=optimized_selection)

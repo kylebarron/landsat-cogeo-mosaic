@@ -62,7 +62,7 @@ def features_to_mosaicJSON(
 
         This optimization implies _both_ that
 
-        - assets will be ordered in the MosaicJSON in order of sort of the
+        - assets will be ordered in the MosaicJSON in order of cover of the
           entire tile
         - the total number of assets is kept to a minimum
 
@@ -138,7 +138,7 @@ def optimize_assets(tile, assets):
 
     This optimization implies _both_ that
 
-    - assets will be ordered in the MosaicJSON in order of sort of the entire tile
+    - assets will be ordered in the MosaicJSON in order of cover of the entire tile
     - the total number of assets is kept to a minimum
 
     Computing the absolute minimum of assets to cover the tile may not in
@@ -167,7 +167,8 @@ def optimize_assets(tile, assets):
         # If all assets are spent and the tile still not covered, raise
         # exception
         if len(assets) == 0:
-            raise ValueError(f'Not enough assets to cover {tile}')
+            print(
+                f'Warning: Not enough assets to cover {tile}', file=sys.stderr)
 
     return final_assets
 
