@@ -288,6 +288,8 @@ class StreamingParser:
         if self.preference == 'oldest':
             return scene1 if scene1_date < scene2_date else scene2
 
+        return True
+
     @property
     def mosaic(self):
         # Keep tiles with at least one asset
