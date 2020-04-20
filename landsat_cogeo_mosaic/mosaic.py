@@ -243,6 +243,10 @@ class StreamingParser:
         quadkeys = [mercantile.quadkey(tile) for tile in tiles]
 
         for quadkey in quadkeys:
+            # If quadkey wasn't initialized, it's outside bounds
+            if quadkey not in self.tiles:
+                continue
+
             self.tiles[quadkey] = self._add_feature_to_quadkey(quadkey, feature)
 
     def _add_feature_to_quadkey(self, quadkey, feature):
