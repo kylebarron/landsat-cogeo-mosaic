@@ -291,6 +291,7 @@ def create_streaming(
         bounds=bounds,
         minzoom=min_zoom,
         maxzoom=max_zoom,
+        preference=preference,
         optimized_selection=optimized_selection)
 
     for line in file:

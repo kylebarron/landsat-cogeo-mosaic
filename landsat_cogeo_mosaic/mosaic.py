@@ -210,12 +210,17 @@ class StreamingParser:
             bounds: Optional[List[float]] = None,
             minzoom: int = 7,
             maxzoom: int = 12,
+            preference: str = 'newest',
             optimized_selection: bool = True):
+
+        if optimized_selection and preference not in ['newest', 'oldest']:
+            raise ValueError('Unsupported preference')
 
         self.quadkey_zoom = quadkey_zoom or minzoom
         self.bounds = bounds or [-180, -90, 180, 90]
         self.minzoom = minzoom
         self.maxzoom = maxzoom
+        self.preference = preference
         self.optimized_selection = optimized_selection
 
         # Find tiles at desired zoom
@@ -224,7 +229,7 @@ class StreamingParser:
 
         self.tiles: Dict[str, List[str]] = {k: [] for k in quadkeys}
 
-    def add(self, feature: Dict, preference='newest'):
+    def add(self, feature: Dict):
         # Find overlapping quadkeys
         feature_geom = asShape(feature['geometry'])
         tiles = list(mercantile.tiles(*feature_geom.bounds, self.quadkey_zoom))
@@ -238,10 +243,9 @@ class StreamingParser:
         quadkeys = [mercantile.quadkey(tile) for tile in tiles]
 
         for quadkey in quadkeys:
-            self.tiles[quadkey] = self._add_feature_to_quadkey(
-                quadkey, feature, preference)
+            self.tiles[quadkey] = self._add_feature_to_quadkey(quadkey, feature)
 
-    def _add_feature_to_quadkey(self, quadkey, feature, preference):
+    def _add_feature_to_quadkey(self, quadkey, feature):
         scene_id = feature['properties']['landsat:product_id']
         meta = landsat_parser(scene_id)
         path = meta['path']
@@ -259,8 +263,7 @@ class StreamingParser:
                     continue
 
                 # Choose between scenes in the same path-row
-                chosen_scene_id = self._choose(
-                    existing_scene_id, scene_id, preference)
+                chosen_scene_id = self._choose(existing_scene_id, scene_id)
                 new_scene_ids.append(chosen_scene_id)
                 inserted = True
 
@@ -273,20 +276,18 @@ class StreamingParser:
         return new_scene_ids
 
     @staticmethod
-    def _choose(scene1, scene2, preference):
+    def _choose(scene1, scene2):
         scene1_meta = landsat_parser(scene1)
         scene2_meta = landsat_parser(scene2)
 
         scene1_date = datetime.strptime(scene1_meta['date'], "%Y-%m-%d")
         scene2_date = datetime.strptime(scene2_meta['date'], "%Y-%m-%d")
 
-        if preference == 'newest':
+        if self.preference == 'newest':
             return scene1 if scene1_date > scene2_date else scene2
 
-        if preference == 'oldest':
+        if self.preference == 'oldest':
             return scene1 if scene1_date < scene2_date else scene2
-
-        raise ValueError('Unsupported preference')
 
     @property
     def mosaic(self):
