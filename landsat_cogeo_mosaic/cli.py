@@ -3,6 +3,7 @@ import re
 from datetime import datetime
 
 import click
+from dateutil.relativedelta import relativedelta
 
 from .mosaic import features_to_mosaicJSON
 from .stac import fetch_sat_api
@@ -48,7 +49,25 @@ def main():
     required=False,
     default=datetime.strftime(datetime.today(), "%Y-%m-%d"),
     show_default=True,
-    help='Maximum date')
+    help='Maximum date, inclusive')
+@click.option(
+    '--period',
+    type=click.Choice(["day", "week", "month", "year"], case_sensitive=False),
+    required=False,
+    default=None,
+    show_default=True,
+    help=
+    'Time period. If provided, overwrites `max-date` with the given period after `min-date`.'
+)
+@click.option(
+    '--period-qty',
+    type=int,
+    required=False,
+    default=1,
+    show_default=True,
+    help=
+    'Number of periods to apply after `min-date`. Only applies if `period` is provided.'
+)
 @click.option(
     '--season',
     multiple=True,
@@ -63,15 +82,32 @@ def main():
     show_default=True,
     help='Limits the number of items per page returned by sat-api.')
 def search(
-        bounds, min_cloud, max_cloud, min_date, max_date, stac_collection_limit,
-        season):
+        bounds, min_cloud, max_cloud, min_date, max_date, period, period_qty,
+        stac_collection_limit, season):
     """Retrieve features from sat-api
     """
 
     bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
     start = datetime.strptime(min_date,
                               "%Y-%m-%d").strftime("%Y-%m-%dT00:00:00Z")
-    end = datetime.strptime(max_date, "%Y-%m-%d").strftime("%Y-%m-%dT23:59:59Z")
+
+    if period:
+        start_datetime = datetime.strptime(start, "%Y-%m-%dT00:00:00Z")
+
+        if period == 'day':
+            delta = relativedelta(days=period_qty)
+        elif period == 'week':
+            delta = relativedelta(weeks=period_qty)
+        elif period == 'month':
+            delta = relativedelta(months=period_qty)
+        elif period == 'year':
+            delta = relativedelta(years=period_qty)
+
+        end_datetime = start_datetime + delta
+        end = end_datetime.strftime("%Y-%m-%dT00:00:00Z")
+    else:
+        end = datetime.strptime(max_date,
+                                "%Y-%m-%d").strftime("%Y-%m-%dT23:59:59Z")
 
     query = {
         "bbox": bounds,

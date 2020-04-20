@@ -1,5 +1,6 @@
 click
 mercantile
+python-dateutil
 requests
 rtree
 shapely
