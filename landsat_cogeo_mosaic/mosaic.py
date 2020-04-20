@@ -275,8 +275,7 @@ class StreamingParser:
 
         return new_scene_ids
 
-    @staticmethod
-    def _choose(scene1, scene2):
+    def _choose(self, scene1, scene2):
         scene1_meta = landsat_parser(scene1)
         scene2_meta = landsat_parser(scene2)
 
