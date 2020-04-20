@@ -114,6 +114,45 @@ Options:
   --help                          Show this message and exit.
 ```
 
+### Create MosaicJSON by streaming
+
+If you have a large MosaicJSON, you may not want to load it all into memory at
+once. This streams one feature at a time, and so is low on memory usage.
+
+```
+Usage: landsat-cogeo-mosaic create-streaming [OPTIONS] FILE
+
+  Create MosaicJSON from STAC features without holding in memory
+
+Options:
+  --min-zoom INTEGER              Minimum zoom  [default: 7]
+  --max-zoom INTEGER              Maximum zoom  [default: 12]
+  --quadkey-zoom INTEGER          Zoom level used for quadkeys in MosaicJSON.
+                                  Lower value means more assets per tile, but
+                                  a smaller MosaicJSON file. Higher value
+                                  means fewer assets per tile but a larger
+                                  MosaicJSON file. Must be between min zoom
+                                  and max zoom, inclusive.
+
+  -b, --bounds TEXT               Comma-separated bounding box: "west, south,
+                                  east, north"
+
+  --optimized-selection / --no-optimized-selection
+                                  Optimize assets in tile. Only a single asset
+                                  per path-row will be included in each
+                                  quadkey. Note that there will usually be
+                                  multiple path-rows within a single quadkey
+                                  tile.  [default: True]
+
+  -p, --preference [newest|oldest]
+                                  Method for choosing scenes in the same path-
+                                  row  [default: newest]
+
+  --season [spring|summer|autumn|winter]
+                                  Season, can provide multiple
+  --help                          Show this message and exit.
+```
+
 ## Example
 
 ### Imagery by season
