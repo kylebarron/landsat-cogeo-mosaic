@@ -305,7 +305,7 @@ class StreamingParser:
     @property
     def mosaic(self):
         # Keep tiles with at least one asset
-        tiles = {k: v for k, v in self.tiles.items() if v}
+        tiles = {k: list(v) for k, v in self.tiles.items() if v}
 
         return {
             'mosaicjson': "0.0.2",
