@@ -227,7 +227,7 @@ class StreamingParser:
         tiles = list(mercantile.tiles(*self.bounds, quadkey_zoom))
         quadkeys = [mercantile.quadkey(tile) for tile in tiles]
 
-        self.tiles: Dict[str, List[str]] = {k: [] for k in quadkeys}
+        self.tiles: Dict[str, List[str]] = {k: set() for k in quadkeys}
 
     def add(self, feature: Dict):
         # Find overlapping quadkeys
@@ -244,10 +244,10 @@ class StreamingParser:
 
         for quadkey in quadkeys:
             # If quadkey wasn't initialized, it's outside bounds
-            if quadkey not in self.tiles:
+            if quadkey not in self.tiles.keys():
                 continue
 
-            self.tiles[quadkey] = self._add_feature_to_quadkey(quadkey, feature)
+            self._add_feature_to_quadkey(quadkey, feature)
 
     def _add_feature_to_quadkey(self, quadkey, feature):
         scene_id = feature['properties']['landsat:product_id']
@@ -255,31 +255,39 @@ class StreamingParser:
         path = meta['path']
         row = meta['row']
 
-        new_scene_ids = []
-        if self.optimized_selection:
-            inserted = False
-            for existing_scene_id in self.tiles[quadkey]:
-                existing_scene_meta = landsat_parser(existing_scene_id)
-                existing_path = existing_scene_meta['path']
-                existing_row = existing_scene_meta['row']
-                if (path != existing_path) and (row != existing_row):
-                    new_scene_ids.append(existing_scene_id)
-                    continue
+        if not self.optimized_selection:
+            self.tiles[quadkey].add(scene_id)
+            return
 
-                # Choose between scenes in the same path-row
-                chosen_scene_id = self._choose(existing_scene_id, scene_id)
-                new_scene_ids.append(chosen_scene_id)
-                inserted = True
+        inserted = False
+        for existing_scene_id in self.tiles[quadkey].copy():
+            existing_scene_meta = landsat_parser(existing_scene_id)
+            existing_path = existing_scene_meta['path']
+            existing_row = existing_scene_meta['row']
 
-            if not inserted:
-                new_scene_ids.append(scene_id)
+            # Not an existing path/row
+            if (path != existing_path) and (row != existing_row):
+                self.tiles[quadkey].add(scene_id)
+                continue
 
-        else:
-            new_scene_ids.append(scene_id)
+            # Choose between scenes in the same path-row
+            keep_existing = self._choose_first(existing_scene_id, scene_id)
+            inserted = True
 
-        return new_scene_ids
+            if keep_existing:
+                continue
 
-    def _choose(self, scene1, scene2):
+            # Remove existing and add new
+            self.tiles[quadkey].remove(existing_scene_id)
+            self.tiles[quadkey].add(scene_id)
+
+        if not inserted:
+            self.tiles[quadkey].add(scene_id)
+
+    def _choose_first(self, scene1: str, scene2: str) -> bool:
+        """
+        Returns True if the first is chosen, False if the second is chosen.
+        """
         scene1_meta = landsat_parser(scene1)
         scene2_meta = landsat_parser(scene2)
 
@@ -287,10 +295,10 @@ class StreamingParser:
         scene2_date = datetime.strptime(scene2_meta['date'], "%Y-%m-%d")
 
         if self.preference == 'newest':
-            return scene1 if scene1_date > scene2_date else scene2
+            return scene1_date > scene2_date
 
         if self.preference == 'oldest':
-            return scene1 if scene1_date < scene2_date else scene2
+            return scene1_date < scene2_date
 
         return True
 
