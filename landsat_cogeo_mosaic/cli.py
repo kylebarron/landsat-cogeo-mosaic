@@ -295,7 +295,12 @@ def create_streaming(
         preference=preference,
         optimized_selection=optimized_selection)
 
+    count = 0
     for line in file:
+        count += 1
+        if count % 1000 == 0:
+            print(f'Feature: {count}', file=sys.stderr)
+
         feature = json.loads(line)
 
         # Filter by season
