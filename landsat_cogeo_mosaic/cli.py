@@ -1,13 +1,14 @@
 import json
 import re
+import sys
 from datetime import datetime
 
 import click
 from dateutil.relativedelta import relativedelta
 
-from .mosaic import features_to_mosaicJSON
-from .stac import fetch_sat_api
-from .util import filter_season
+from landsat_cogeo_mosaic.mosaic import features_to_mosaicJSON
+from landsat_cogeo_mosaic.stac import fetch_sat_api
+from landsat_cogeo_mosaic.util import filter_season
 
 
 @click.group()
@@ -141,7 +142,9 @@ def search(
 
     features = fetch_sat_api(query)
     if not features:
-        raise ValueError(f"No asset found for query '{json.dumps(query)}'")
+        print(
+            f"No asset found for query '{json.dumps(query)}'", file=sys.stderr)
+        return
 
     if season:
         features = filter_season(features, season)
