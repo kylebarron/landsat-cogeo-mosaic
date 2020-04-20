@@ -253,7 +253,8 @@ def create(
     '--bounds',
     type=str,
     required=False,
-    default=None,
+    default='-180,-90,180,90',
+    show_default=True,
     help='Comma-separated bounding box: "west, south, east, north"')
 @click.option(
     '--optimized-selection/--no-optimized-selection',

@@ -207,7 +207,7 @@ class StreamingParser:
     def __init__(
             self,
             quadkey_zoom: Optional[int] = None,
-            bounds: Optional[List[float]] = None,
+            bounds: List[float] = [-180, -90, 180, 90],
             minzoom: int = 7,
             maxzoom: int = 12,
             preference: str = 'newest',
@@ -217,14 +217,14 @@ class StreamingParser:
             raise ValueError('Unsupported preference')
 
         self.quadkey_zoom = quadkey_zoom or minzoom
-        self.bounds = bounds or [-180, -90, 180, 90]
+        self.bounds = bounds
         self.minzoom = minzoom
         self.maxzoom = maxzoom
         self.preference = preference
         self.optimized_selection = optimized_selection
 
         # Find tiles at desired zoom
-        tiles = list(mercantile.tiles(*bounds, quadkey_zoom))
+        tiles = list(mercantile.tiles(*self.bounds, quadkey_zoom))
         quadkeys = [mercantile.quadkey(tile) for tile in tiles]
 
         self.tiles: Dict[str, List[str]] = {k: [] for k in quadkeys}
