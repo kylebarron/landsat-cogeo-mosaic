@@ -6,7 +6,7 @@ from datetime import datetime
 import click
 from dateutil.relativedelta import relativedelta
 
-from landsat_cogeo_mosaic.mosaic import features_to_mosaicJSON
+from landsat_cogeo_mosaic.mosaic import features_to_mosaicJSON, StreamingParser
 from landsat_cogeo_mosaic.stac import fetch_sat_api
 from landsat_cogeo_mosaic.util import filter_season
 
@@ -224,8 +224,94 @@ def create(
     print(json.dumps(mosaic, separators=(',', ':')))
 
 
+@click.command()
+@click.option(
+    '--min-zoom',
+    type=int,
+    required=False,
+    default=7,
+    show_default=True,
+    help='Minimum zoom')
+@click.option(
+    '--max-zoom',
+    type=int,
+    required=False,
+    default=12,
+    show_default=True,
+    help='Maximum zoom')
+@click.option(
+    '--quadkey-zoom',
+    type=int,
+    required=False,
+    default=None,
+    show_default=True,
+    help=
+    'Zoom level used for quadkeys in MosaicJSON. Lower value means more assets per tile, but a smaller MosaicJSON file. Higher value means fewer assets per tile but a larger MosaicJSON file. Must be between min zoom and max zoom, inclusive.'
+)
+@click.option(
+    '-b',
+    '--bounds',
+    type=str,
+    required=False,
+    default=None,
+    help='Comma-separated bounding box: "west, south, east, north"')
+@click.option(
+    '--optimized-selection/--no-optimized-selection',
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help=
+    'Optimize assets in tile. Only a single asset per path-row will be included in each quadkey. Note that there will usually be multiple path-rows within a single quadkey tile.'
+)
+@click.option(
+    '-p',
+    '--preference',
+    type=click.Choice(['newest', 'oldest'], case_sensitive=False),
+    default='newest',
+    show_default=True,
+    help='Method for choosing scenes in the same path-row')
+@click.option(
+    '--season',
+    multiple=True,
+    default=None,
+    show_default=True,
+    type=click.Choice(["spring", "summer", "autumn", "winter"]),
+    help='Season, can provide multiple')
+@click.argument('file', type=click.File())
+def create_streaming(
+        min_zoom, max_zoom, quadkey_zoom, bounds, optimized_selection,
+        preference, season, file):
+    """Create MosaicJSON from STAC features without holding in memory
+    """
+    if bounds:
+        bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
+
+    streaming_parser = StreamingParser(
+        quadkey_zoom=quadkey_zoom,
+        bounds=bounds,
+        minzoom=min_zoom,
+        maxzoom=max_zoom,
+        optimized_selection=optimized_selection)
+
+    for line in file:
+        feature = json.loads(line)
+
+        # Filter by season
+        if season:
+            features = filter_season([feature], season)
+            if not features:
+                continue
+
+            feature = features[0]
+
+        streaming_parser.add(feature)
+
+    print(json.dumps(streaming_parser.mosaic, separators=(',', ':')))
+
+
 main.add_command(search)
 main.add_command(create)
+main.add_command(create_streaming)
 
 if __name__ == '__main__':
     main()

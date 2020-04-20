@@ -27,13 +27,13 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import json
 import sys
 from copy import deepcopy
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import mercantile
+from rio_tiler.io.landsat8 import landsat_parser
 from rtree import index
 from shapely.geometry import Polygon, asShape, box
 
@@ -195,3 +195,111 @@ def sort_assets_by_cover(tile_geom: Polygon, assets: List[Dict]) -> List[Dict]:
 def pct_overlap(tile_geom: Polygon, asset: Dict) -> float:
     asset_geom = asShape(asset['geometry'])
     return tile_geom.intersection(asset_geom).area / tile_geom.area
+
+
+class StreamingParser:
+    """Create Mosaic from stream of GeoJSON Features
+
+    Instead of first laying out all features and then splitting them up into
+    tiles, this works by first laying out all _tiles_ and then adding features
+    one by one.
+    """
+    def __init__(
+            self,
+            quadkey_zoom: Optional[int] = None,
+            bounds: Optional[List[float]] = None,
+            minzoom: int = 7,
+            maxzoom: int = 12,
+            optimized_selection: bool = True):
+
+        self.quadkey_zoom = quadkey_zoom or minzoom
+        self.bounds = bounds or [-180, -90, 180, 90]
+        self.minzoom = minzoom
+        self.maxzoom = maxzoom
+        self.optimized_selection = optimized_selection
+
+        # Find tiles at desired zoom
+        tiles = list(mercantile.tiles(*bounds, quadkey_zoom))
+        quadkeys = [mercantile.quadkey(tile) for tile in tiles]
+
+        self.tiles: Dict[str, List[str]] = {k: [] for k in quadkeys}
+
+    def add(self, feature: Dict, preference='newest'):
+        # Find overlapping quadkeys
+        feature_geom = asShape(feature['geometry'])
+        tiles = list(mercantile.tiles(*feature_geom.bounds, self.quadkey_zoom))
+
+        # Keep tiles that intersect the feature geometry
+        tiles = [
+            tile for tile in tiles if asShape(
+                mercantile.feature(tile)['geometry']).intersects(feature_geom)
+        ]
+
+        quadkeys = [mercantile.quadkey(tile) for tile in tiles]
+
+        for quadkey in quadkeys:
+            self.tiles[quadkey] = self._add_feature_to_quadkey(
+                quadkey, feature, preference)
+
+    def _add_feature_to_quadkey(self, quadkey, feature, preference):
+        scene_id = feature['properties']['landsat:product_id']
+        meta = landsat_parser(scene_id)
+        path = meta['path']
+        row = meta['row']
+
+        new_scene_ids = []
+        if self.optimized_selection:
+            inserted = False
+            for existing_scene_id in self.tiles[quadkey]:
+                existing_scene_meta = landsat_parser(existing_scene_id)
+                existing_path = existing_scene_meta['path']
+                existing_row = existing_scene_meta['row']
+                if (path != existing_path) and (row != existing_row):
+                    new_scene_ids.append(existing_scene_id)
+                    continue
+
+                # Choose between scenes in the same path-row
+                chosen_scene_id = self._choose(
+                    existing_scene_id, scene_id, preference)
+                new_scene_ids.append(chosen_scene_id)
+                inserted = True
+
+            if not inserted:
+                new_scene_ids.append(scene_id)
+
+        else:
+            new_scene_ids.append(scene_id)
+
+        return new_scene_ids
+
+    @staticmethod
+    def _choose(scene1, scene2, preference):
+        scene1_meta = landsat_parser(scene1)
+        scene2_meta = landsat_parser(scene2)
+
+        scene1_date = datetime.strptime(scene1_meta['date'], "%Y-%m-%d")
+        scene2_date = datetime.strptime(scene2_meta['date'], "%Y-%m-%d")
+
+        if preference == 'newest':
+            return scene1 if scene1_date > scene2_date else scene2
+
+        if preference == 'oldest':
+            return scene1 if scene1_date < scene2_date else scene2
+
+        raise ValueError('Unsupported preference')
+
+    @property
+    def mosaic(self):
+        # Keep tiles with at least one asset
+        tiles = {k: v for k, v in self.tiles.items() if v}
+
+        return {
+            'mosaicjson': "0.0.2",
+            'minzoom': self.minzoom,
+            'maxzoom': self.maxzoom,
+            'quadkey_zoom': self.quadkey_zoom,
+            'bounds': self.bounds,
+            'center': [(self.bounds[0] + self.bounds[2]) / 2,
+                       (self.bounds[1] + self.bounds[3]) / 2, self.minzoom],
+            'tiles': tiles,
+        }

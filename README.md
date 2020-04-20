@@ -185,3 +185,39 @@ landsat-cogeo-mosaic create \
     features.geojson > mosaic.json
 ```
 
+### Worldwide basemap
+
+Download _all_ low-cloud imagery from 2013 to the present. Create a file
+`worldwide_features.geojson` with all data, on which `create` can later be
+called.
+
+```bash
+rm worldwide_features.geojson
+for year in {2013..2019}; do
+    for month in {1..12}; do
+        echo "${year}-${month}"
+        landsat-cogeo-mosaic search \
+            --bounds '-180,-90,90,180' \
+            --max-cloud 5 \
+            --min-date "${year}-${month}-01" \
+            --period month >> worldwide_features.geojson
+    done
+done
+
+# Fill in 2020
+export year="2020"
+for month in {1..4}; do
+    echo "${year}-${month}"
+    landsat-cogeo-mosaic search \
+        --bounds '-180,-90,90,180' \
+        --max-cloud 5 \
+        --min-date "${year}-${month}-01" \
+        --period month >> worldwide_features.geojson
+done
+```
+
+As of mid-April 2020, that comes to ~240,000 features:
+```bash
+> wc -l worldwide_features.geojson
+  241842 worldwide_features.geojson
+```
