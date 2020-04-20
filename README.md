@@ -60,15 +60,27 @@ Usage: landsat-cogeo-mosaic search [OPTIONS]
 Options:
   -b, --bounds TEXT               Comma-separated bounding box: "west, south,
                                   east, north"  [required]
+
   --min-cloud FLOAT               Minimum cloud percentage  [default: 0]
   --max-cloud FLOAT               Maximum cloud percentage  [default: 100]
   --min-date TEXT                 Minimum date  [default: 2013-01-01]
-  --max-date TEXT                 Maximum date  [default: 2020-04-02]
+  --max-date TEXT                 Maximum date, inclusive  [default:
+                                  2020-04-19]
+
+  --period [day|week|month|year]  Time period. If provided, overwrites `max-
+                                  date` with the given period after `min-
+                                  date`.
+
+  --period-qty INTEGER            Number of periods to apply after `min-date`.
+                                  Only applies if `period` is provided.
+                                  [default: 1]
+
   --season [spring|summer|autumn|winter]
                                   Season, can provide multiple
   --stac-collection-limit INTEGER
                                   Limits the number of items per page returned
                                   by sat-api.  [default: 500]
+
   --help                          Show this message and exit.
 ```
 
@@ -103,6 +115,8 @@ Options:
 ```
 
 ## Example
+
+### Imagery by season
 
 I'm interested in creating a seamless cloudless mosaicJSON of imagery for the
 continental U.S. Some areas very often have clouds, so I first download metadata
@@ -156,3 +170,18 @@ kepler temp.geojson
 ![image](https://user-images.githubusercontent.com/15164633/78316070-f3055080-751b-11ea-8e7c-a2985bab451c.png)
 
 Now the Southeast is cloudy! You really can't win can you?
+
+For now, just create a non-winter one:
+```bash
+landsat-cogeo-mosaic create \
+    --bounds '-127.64,23.92,-64.82,52.72' \
+    --min-zoom 7 \
+    --max-zoom 12 \
+    --quadkey-zoom 8 \
+    --optimized-selection \
+    --season summer \
+    --season spring \
+    --season autumn \
+    features.geojson > mosaic.json
+```
+
