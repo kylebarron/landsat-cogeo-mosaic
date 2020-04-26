@@ -282,33 +282,39 @@ class StreamingParser:
             self.tiles[quadkey].add(scene_id)
             return
 
-        inserted = False
-        for existing_scene_id in self.tiles[quadkey].copy():
-            if scene_id == existing_scene_id:
-                continue
+        existing_scene_ids = self.tiles[quadkey].copy()
 
+        # Same scene id already exists
+        if scene_id in existing_scene_ids:
+            return
+
+        # Loop through existing assets to see if _any_ are overlapping
+        # Note: If I do this correctly, there should only ever be _one_
+        # overlapping
+        existing_overlapping_scene_id = None
+        for existing_scene_id in existing_scene_ids:
             existing_scene_meta = landsat_parser(existing_scene_id)
             existing_path = existing_scene_meta['path']
             existing_row = existing_scene_meta['row']
 
-            # Not an existing path/row
-            if (path != existing_path) and (row != existing_row):
-                self.tiles[quadkey].add(scene_id)
-                continue
+            if (path == existing_path) and (row == existing_row):
+                existing_overlapping_scene_id = existing_scene_id
+                break
 
-            # Choose between scenes in the same path-row
-            keep_existing = self._choose_first(existing_scene_id, scene_id)
-            inserted = True
-
-            if keep_existing:
-                continue
-
-            # Remove existing and add new
-            self.tiles[quadkey].remove(existing_scene_id)
+        # If not set, no existing overlapping scene exists
+        if not existing_overlapping_scene_id:
             self.tiles[quadkey].add(scene_id)
+            return
 
-        if not inserted:
-            self.tiles[quadkey].add(scene_id)
+        # An existing overlapping scene exists
+        keep_existing = self._choose_first(
+            existing_overlapping_scene_id, scene_id)
+        if keep_existing:
+            return
+
+        # Remove existing and add new
+        self.tiles[quadkey].remove(existing_overlapping_scene_id)
+        self.tiles[quadkey].add(scene_id)
 
     def _choose_first(self, scene1: str, scene2: str) -> bool:
         """Decide whether to choose first or second scene
