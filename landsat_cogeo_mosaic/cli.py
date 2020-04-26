@@ -334,6 +334,11 @@ def create_streaming(
 
 @click.command()
 @click.option(
+    '--sqlite-path',
+    type=click.Path(exists=True, readable=True),
+    required=True,
+    help='Path to sqlite3 db generated from scene_list')
+@click.option(
     '--pathrow-xw',
     type=click.Path(exists=True, readable=True),
     required=True,
@@ -410,11 +415,10 @@ def create_streaming(
     help=
     'Date used for comparisons when preference is closest-to-date. Format must be YYYY-MM-DD'
 )
-@click.argument('file', type=click.File())
 def create_from_db(
         sqlite_path, pathrow_xw, bounds, max_cloud, min_date, max_date,
         min_zoom, max_zoom, quadkey_zoom, optimized_selection, preference,
-        closest_to_date, file):
+        closest_to_date):
     if bounds:
         bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
         bounds = box(*bounds)
@@ -432,7 +436,12 @@ def create_from_db(
         minzoom=min_zoom,
         maxzoom=max_zoom)
 
+    count = 0
     for pathrow, coords in pr_xw.items():
+        count += 1
+        if count % 1000 == 0:
+            print(f'Pathrow: {count}', file=sys.stderr)
+
         coord_depth = list_depth(coords)
         if coord_depth == 3:
             geometry = {'type': 'Polygon', 'coordinates': coords}

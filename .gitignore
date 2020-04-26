@@ -1,5 +1,9 @@
+*.db
+data/
 *.json
+*.json.gz
 *.geojson
+*.bak
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

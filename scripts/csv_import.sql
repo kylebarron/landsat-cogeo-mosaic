@@ -31,3 +31,10 @@ ALTER TABLE scene_list ADD COLUMN tier TEXT;
 
 -- Add values to tier column, substring of productId
 UPDATE scene_list SET tier = substr(productId, -2, 2);
+
+-- Create indices
+-- Not exactly sure which index is most important, but disk size isn't an issue
+CREATE INDEX pathrow_idx ON scene_list(pathrow);
+CREATE INDEX acquisitionDate_idx on scene_list(acquisitionDate);
+CREATE INDEX cloudCover_idx on scene_list(cloudCover);
+CREATE INDEX tier_idx on scene_list(tier);
