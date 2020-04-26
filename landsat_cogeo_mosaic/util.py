@@ -41,3 +41,6 @@ def bounds_intersect(bounds1: List[float], bounds2: List[float]) -> bool:
         return True
 
     return False
+
+
+list_depth = lambda L: isinstance(L, list) and max(map(list_depth, L)) + 1
