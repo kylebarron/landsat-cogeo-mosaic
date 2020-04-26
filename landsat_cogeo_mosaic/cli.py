@@ -1,17 +1,15 @@
-import csv
 import json
 import re
 import sys
 from datetime import datetime
 
 import click
-from dateutil.parser import parse as date_parse
 from dateutil.relativedelta import relativedelta
+from shapely.geometry import asShape, box
 
 from landsat_cogeo_mosaic.mosaic import StreamingParser, features_to_mosaicJSON
 from landsat_cogeo_mosaic.stac import fetch_sat_api
-from landsat_cogeo_mosaic.util import (bounds_intersect, filter_season,
-                                       list_depth)
+from landsat_cogeo_mosaic.util import filter_season, list_depth
 from landsat_cogeo_mosaic.validate import missing_quadkeys as _missing_quadkeys
 
 
@@ -413,18 +411,17 @@ def create_streaming(
     'Date used for comparisons when preference is closest-to-date. Format must be YYYY-MM-DD'
 )
 @click.argument('file', type=click.File())
-def create_from_scene_list(
+def create_from_db(
+        sqlite_path,
         pathrow_xw, bounds, max_cloud, min_date, max_date, min_zoom, max_zoom,
         quadkey_zoom, optimized_selection, preference, closest_to_date, file):
     if bounds:
         bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
+        bounds = box(*bounds)
 
     if (preference == 'closest-to-date') and (not closest_to_date):
         msg = 'closest-to-date parameter required when preference is closest-to-date'
         raise ValueError(msg)
-
-    min_date = datetime.strptime(min_date, "%Y-%m-%d")
-    max_date = datetime.strptime(max_date, "%Y-%m-%d")
 
     with open(pathrow_xw) as f:
         pr_xw = json.load(f)
@@ -433,67 +430,40 @@ def create_from_scene_list(
         quadkey_zoom=quadkey_zoom,
         bounds=bounds,
         minzoom=min_zoom,
-        maxzoom=max_zoom,
-        preference=preference,
-        optimized_selection=optimized_selection,
-        accessor=lambda d: d['productId'],
-        closest_to_date=closest_to_date)
+        maxzoom=max_zoom)
 
-    reader = csv.reader(file)
-    header = next(reader)
+    for pathrow, coords in pr_xw.items():
+        coord_depth = list_depth(coords)
+        if coord_depth == 3:
+            geometry = {
+                'type': 'Polygon',
+                'coordinates': coords
+            }
+        elif coord_depth == 4:
+            geometry = {
+                'type': 'MultiPolygon',
+                'coordinates': coords
+            }
 
-    count = 0
-    for row in reader:
-        count += 1
-        if count % 5000 == 0:
-            print(f'Feature: {count}', file=sys.stderr)
-
-        record = {k: v for k, v in zip(header, row)}
-
-        record['cloudCover'] = float(record['cloudCover'])
-        record['path'] = record['path'].zfill(3)
-        record['row'] = record['row'].zfill(3)
-        record['min_lat'] = float(record['min_lat'])
-        record['min_lon'] = float(record['min_lon'])
-        record['max_lat'] = float(record['max_lat'])
-        record['max_lon'] = float(record['max_lon'])
-        record['acquisitionDate'] = date_parse(record['acquisitionDate'])
-        record['bounds'] = [
-            record['min_lon'], record['min_lat'], record['max_lon'],
-            record['max_lat']
-        ]
-        record['pathrow'] = record['path'] + record['row']
-
-        # Occasionally a MultiPolygon, e.g. when crossing dateline
-        if record['pathrow'] in pr_xw:
-            coords = pr_xw[record['pathrow']]
-            coord_depth = list_depth(coords)
-            if coord_depth == 3:
-                record['geometry'] = {
-                    'type': 'Polygon',
-                    'coordinates': coords
-                }
-            elif coord_depth == 4:
-                record['geometry'] = {
-                    'type': 'MultiPolygon',
-                    'coordinates': coords
-                }
-
-
-        if record['cloudCover'] > max_cloud:
-            continue
-
+        pathrow_geom = asShape(geometry)
+        # Check in bounds
         if bounds:
-            if not bounds_intersect(record['bounds'], bounds):
+            if not pathrow_geom.intersects(bounds):
                 continue
 
-        if record['acquisitionDate'] < min_date:
-            continue
+        it = find_records(sqlite_path,
+                pathrow=pathrow,
+                table_name='scene_list',
+                max_cloud=max_cloud,
+                min_date=None,
+                max_date=None,
+                preference=preference,
+                closest_to_date=closest_to_date,
+                columns=['productId'])
 
-        if record['acquisitionDate'] > max_date:
-            continue
-
-        streaming_parser.add(record)
+        for record in it:
+            streaming_parser.add_by_pathrow(record['productId'], pathrow_geom)
+            break
 
     print(json.dumps(streaming_parser.mosaic, separators=(',', ':')))
 

@@ -1,10 +1,28 @@
-from typing import Dict
-from datetime import datetime
 import sqlite3
+from datetime import datetime
+from typing import Dict, Iterable, List, Optional, Union
+
 from dateutil.parser import parse as date_parse
 
 
-def find_records(sqlite_path, **kwargs):
+def find_records(sqlite_path, **kwargs) -> Iterable[Dict]:
+    """Find records for query from sqlite
+
+    Args:
+        - pathrow: 6-character pathrow
+        - table_name: name of table in sqlite. Default 'scene_list'
+        - max_cloud: maximum cloud cover percent. Range from 0-100.
+        - min_date: min date as str: 'YYYY-MM-DD'
+        - max_date: max date as str: 'YYYY-MM-DD'
+        - preference: preference for selecting pathrow
+        - tier_preference: preference of tiers, by default ['T1', 'T2', 'RT']
+        - closest_to_date: datetime used for comparisons when preference is closest-to-date. Must be datetime or str of format YYYY-MM-DD
+        - limit: Max number of results to return
+        - columns: columns to return
+
+    Returns:
+        iterator that creates dict records
+    """
     # Setting the row_factory attribute allows for creating dict-like objects
     # https://stackoverflow.com/a/18788347
     conn = sqlite3.connect(sqlite_path)
@@ -16,20 +34,35 @@ def find_records(sqlite_path, **kwargs):
 
 def generate_query(
         pathrow,
-        table_name='scene_list',
-        max_cloud=10,
-        min_date=None,
-        max_date=None,
-        preference=None,
-        tier_preference=['T1', 'T2', 'RT'],
-        closest_to_date=None,
-        limit=1,
-        columns=['productId']):
+        table_name: str='scene_list',
+        max_cloud: float=10,
+        min_date: str=None,
+        max_date: str=None,
+        preference: Optional[str]=None,
+        tier_preference: List[str]=['T1', 'T2', 'RT'],
+        closest_to_date: Optional[Union[datetime, str]]=None,
+        limit: int=1,
+        columns: List[str]=['productId']) -> str:
     """Generate query for SQLite
 
     Technically you should use ? in query strings that will be interpolated by
     the DB API to avoid SQL injection attacks, but since this code is only run
     locally I'll just use string interpolation.
+
+    Args:
+        - pathrow: 6-character pathrow
+        - table_name: name of table in sqlite. Default 'scene_list'
+        - max_cloud: maximum cloud cover percent. Range from 0-100.
+        - min_date: min date as str: 'YYYY-MM-DD'
+        - max_date: max date as str: 'YYYY-MM-DD'
+        - preference: preference for selecting pathrow
+        - tier_preference: preference of tiers, by default ['T1', 'T2', 'RT']
+        - closest_to_date: datetime used for comparisons when preference is closest-to-date. Must be datetime or str of format YYYY-MM-DD
+        - limit: Max number of results to return
+        - columns: columns to return
+
+    Returns:
+        string with query
     """
 
     column_str = ', '.join(set(columns))

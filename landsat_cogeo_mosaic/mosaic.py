@@ -232,7 +232,9 @@ class StreamingParser:
             msg = 'closest_to_date required when preference is closest-to-date'
             raise ValueError(msg)
 
-        if isinstance(closest_to_date, datetime):
+        if preference != 'closest-to-date':
+            self.closest_to_date = None
+        elif isinstance(closest_to_date, datetime):
             self.closest_to_date = closest_to_date
         else:
             self.closest_to_date = datetime.strptime(
@@ -243,6 +245,29 @@ class StreamingParser:
         quadkeys = [mercantile.quadkey(tile) for tile in tiles]
 
         self.tiles: Dict[str, List[str]] = {k: set() for k in quadkeys}
+
+    def add_by_pathrow(self, scene_id, pathrow_geom):
+        """Add scene to tiles dict by pathrow
+
+        Args:
+            - feature: GeoJSON Feature derived from STAC
+        """
+        tiles = list(mercantile.tiles(*pathrow_geom.bounds, self.quadkey_zoom))
+
+        # Keep tiles that intersect the feature geometry
+        tiles = [
+            tile for tile in tiles if asShape(
+                mercantile.feature(tile)['geometry']).intersects(pathrow_geom)
+        ]
+
+        quadkeys = [mercantile.quadkey(tile) for tile in tiles]
+
+        for quadkey in quadkeys:
+            # If quadkey wasn't initialized, it's outside bounds
+            if quadkey not in self.tiles.keys():
+                continue
+
+            self.tiles[quadkey].add(scene_id)
 
     def add(self, feature: Dict):
         """Add feature to tiles dict
