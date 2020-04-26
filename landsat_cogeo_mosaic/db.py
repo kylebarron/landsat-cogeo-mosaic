@@ -34,15 +34,15 @@ def find_records(sqlite_path, **kwargs) -> Iterable[Dict]:
 
 def generate_query(
         pathrow,
-        table_name: str='scene_list',
-        max_cloud: float=10,
-        min_date: str=None,
-        max_date: str=None,
-        preference: Optional[str]=None,
-        tier_preference: List[str]=['T1', 'T2', 'RT'],
-        closest_to_date: Optional[Union[datetime, str]]=None,
-        limit: int=1,
-        columns: List[str]=['productId']) -> str:
+        table_name: str = 'scene_list',
+        max_cloud: float = 10,
+        min_date: str = None,
+        max_date: str = None,
+        preference: Optional[str] = None,
+        tier_preference: List[str] = ['T1', 'T2', 'RT'],
+        closest_to_date: Optional[Union[datetime, str]] = None,
+        limit: int = 1,
+        columns: List[str] = ['productId']) -> str:
     """Generate query for SQLite
 
     Technically you should use ? in query strings that will be interpolated by
@@ -96,12 +96,14 @@ def generate_query(
         s += ' END'
         order_clause.append(s)
 
-    if closest_to_date:
+    if preference == 'closest-to-date':
         closest_to_date = coerce_to_datetime(closest_to_date)
         closest_to_date_timestamp = round(closest_to_date.timestamp())
         order_clause.append(
             f"abs(strftime('%s', datetime({closest_to_date_timestamp}, 'unixepoch')) - strftime('%s', acquisitionDate))"
         )
+    else:
+        raise ValueError('preference not supported')
 
     if order_clause:
         execute_str += f" ORDER BY {', '.join(order_clause)}"

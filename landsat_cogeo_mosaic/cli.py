@@ -399,9 +399,8 @@ def create_streaming(
 @click.option(
     '-p',
     '--preference',
-    type=click.Choice(['newest', 'oldest', 'closest-to-date'],
-                      case_sensitive=False),
-    default='newest',
+    type=click.Choice(['closest-to-date'], case_sensitive=False),
+    default='closest-to-date',
     show_default=True,
     help='Method for choosing scenes in the same path-row')
 @click.option(
