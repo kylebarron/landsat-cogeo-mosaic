@@ -350,6 +350,21 @@ class StreamingParser:
 
     @property
     def mosaic(self):
+        # Check that selection correctly optimized
+        if self.optimized_selection:
+            num_duplicate_quadkeys, num_duplicate_assets = self.check_optimized_selection(
+            )
+            if num_duplicate_quadkeys or num_duplicate_assets:
+                print(
+                    'Warning: selection not correctly optimized.',
+                    file=sys.stderr)
+                print(
+                    f'# of quadkeys with duplicate path-rows: {num_duplicate_quadkeys}',
+                    file=sys.stderr)
+                print(
+                    f'# of duplicate path-rows overall: {num_duplicate_assets}',
+                    file=sys.stderr)
+
         # Keep tiles with at least one asset
         tiles = {k: list(v) for k, v in self.tiles.items() if v}
 
@@ -363,3 +378,17 @@ class StreamingParser:
                        (self.bounds[1] + self.bounds[3]) / 2, self.minzoom],
             'tiles': tiles,
         }
+
+    def check_optimized_selection(self):
+        num_duplicate_quadkeys = 0
+        num_duplicate_assets = 0
+        for assets in self.tiles.values():
+            n_assets = len(assets)
+            metas = [landsat_parser(asset) for asset in assets]
+
+            pathrows = {meta['path'] + meta['row'] for meta in metas}
+            if n_assets != len(pathrows):
+                num_duplicate_quadkeys += 1
+                num_duplicate_assets += n_assets - len(pathrows)
+
+        return num_duplicate_quadkeys, num_duplicate_assets
