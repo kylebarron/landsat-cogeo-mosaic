@@ -1,3 +1,4 @@
+import csv
 import json
 import re
 import sys
@@ -8,7 +9,7 @@ from dateutil.relativedelta import relativedelta
 
 from landsat_cogeo_mosaic.mosaic import StreamingParser, features_to_mosaicJSON
 from landsat_cogeo_mosaic.stac import fetch_sat_api
-from landsat_cogeo_mosaic.util import filter_season
+from landsat_cogeo_mosaic.util import bounds_intersect, filter_season
 from landsat_cogeo_mosaic.validate import missing_quadkeys as _missing_quadkeys
 
 
@@ -326,6 +327,144 @@ def create_streaming(
             feature = features[0]
 
         streaming_parser.add(feature)
+
+    print(json.dumps(streaming_parser.mosaic, separators=(',', ':')))
+
+
+@click.command()
+@click.option(
+    '-b',
+    '--bounds',
+    type=str,
+    required=True,
+    help='Comma-separated bounding box: "west, south, east, north"')
+@click.option(
+    '--max-cloud',
+    type=float,
+    required=False,
+    default=100,
+    show_default=True,
+    help='Maximum cloud percentage')
+@click.option(
+    '--min-date',
+    type=str,
+    required=False,
+    default='2013-01-01',
+    show_default=True,
+    help='Minimum date')
+@click.option(
+    '--max-date',
+    type=str,
+    required=False,
+    default=datetime.strftime(datetime.today(), "%Y-%m-%d"),
+    show_default=True,
+    help='Maximum date, inclusive')
+@click.option(
+    '--min-zoom',
+    type=int,
+    required=False,
+    default=7,
+    show_default=True,
+    help='Minimum zoom')
+@click.option(
+    '--max-zoom',
+    type=int,
+    required=False,
+    default=12,
+    show_default=True,
+    help='Maximum zoom')
+@click.option(
+    '--quadkey-zoom',
+    type=int,
+    required=False,
+    default=None,
+    show_default=True,
+    help=
+    'Zoom level used for quadkeys in MosaicJSON. Lower value means more assets per tile, but a smaller MosaicJSON file. Higher value means fewer assets per tile but a larger MosaicJSON file. Must be between min zoom and max zoom, inclusive.'
+)
+@click.option(
+    '--optimized-selection/--no-optimized-selection',
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help=
+    'Optimize assets in tile. Only a single asset per path-row will be included in each quadkey. Note that there will usually be multiple path-rows within a single quadkey tile.'
+)
+@click.option(
+    '-p',
+    '--preference',
+    type=click.Choice(['newest', 'oldest', 'closest-to-date'],
+                      case_sensitive=False),
+    default='newest',
+    show_default=True,
+    help='Method for choosing scenes in the same path-row')
+@click.option(
+    '--closest-to-date',
+    type=str,
+    default=None,
+    help=
+    'Date used for comparisons when preference is closest-to-date. Format must be YYYY-MM-DD'
+)
+@click.argument('file', type=click.File())
+def create_from_scene_list(
+        bounds, max_cloud, min_date, max_date, min_zoom, max_zoom, quadkey_zoom,
+        optimized_selection, preference, closest_to_date, file):
+    if bounds:
+        bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
+
+    if (preference == 'closest-to-date') and (not closest_to_date):
+        msg = 'closest-to-date parameter required when preference is closest-to-date'
+        raise ValueError(msg)
+
+    streaming_parser = StreamingParser(
+        quadkey_zoom=quadkey_zoom,
+        bounds=bounds,
+        minzoom=min_zoom,
+        maxzoom=max_zoom,
+        preference=preference,
+        optimized_selection=optimized_selection,
+        accessor=lambda d: d['productId'],
+        closest_to_date=closest_to_date)
+
+    reader = csv.reader(file)
+    header = next(reader)
+
+    count = 0
+    for row in reader:
+        count += 1
+        if count % 5000 == 0:
+            print(f'Feature: {count}', file=sys.stderr)
+
+        record = {k: v for k, v in zip(header, row)}
+
+        record['cloudCover'] = float(record['cloudCover'])
+        record['path'] = record['path'].zfill(3)
+        record['row'] = record['row'].zfill(3)
+        record['min_lat'] = float(record['min_lat'])
+        record['min_lon'] = float(record['min_lon'])
+        record['max_lat'] = float(record['max_lat'])
+        record['max_lon'] = float(record['max_lon'])
+        record['acquisitionDate'] = datetime.strptime(
+            record['acquisitionDate'], "%Y-%m-%d %H:%M:%S.%f")
+
+        if record['cloudCover'] > max_cloud:
+            continue
+
+        record['bounds'] = [
+            record['min_lon'], record['min_lat'], record['max_lon'],
+            record['max_lat']
+        ]
+
+        if not bounds_intersect(record['bounds'], bounds):
+            continue
+
+        if record['acquisitionDate'] < min_date:
+            continue
+
+        if record['acquisitionDate'] > max_date:
+            continue
+
+        streaming_parser.add(record)
 
     print(json.dumps(streaming_parser.mosaic, separators=(',', ':')))
 

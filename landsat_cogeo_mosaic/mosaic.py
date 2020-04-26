@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import sys
 from copy import deepcopy
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Callable
 
 import mercantile
 from rio_tiler.io.landsat8 import landsat_parser
@@ -212,6 +212,8 @@ class StreamingParser:
             maxzoom: int = 12,
             preference: str = 'newest',
             optimized_selection: bool = True,
+            accessor: Callable = lambda d: d['properties']['landsat:product_id'
+                                                          ],
             closest_to_date: Optional[datetime] = None):
 
         if optimized_selection and preference not in ['newest', 'oldest',
@@ -224,6 +226,7 @@ class StreamingParser:
         self.maxzoom = maxzoom
         self.preference = preference
         self.optimized_selection = optimized_selection
+        self.accessor = accessor
 
         if (preference == 'closest-to-date') and (not closest_to_date):
             msg = 'closest_to_date required when preference is closest-to-date'
@@ -273,7 +276,7 @@ class StreamingParser:
             - quadkey: quadkey to add feature to
             - feature: feature to add
         """
-        scene_id = feature['properties']['landsat:product_id']
+        scene_id = self.accessor(feature)
         meta = landsat_parser(scene_id)
         path = meta['path']
         row = meta['row']
