@@ -6,9 +6,10 @@ from datetime import datetime
 import click
 from dateutil.relativedelta import relativedelta
 
-from landsat_cogeo_mosaic.mosaic import features_to_mosaicJSON, StreamingParser
+from landsat_cogeo_mosaic.mosaic import StreamingParser, features_to_mosaicJSON
 from landsat_cogeo_mosaic.stac import fetch_sat_api
 from landsat_cogeo_mosaic.util import filter_season
+from landsat_cogeo_mosaic.validate import missing_quadkeys as _missing_quadkeys
 
 
 @click.group()
@@ -295,6 +296,10 @@ def create_streaming(
     if bounds:
         bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
 
+    if (preference == 'closest-to-date') and (not closest_to_date):
+        msg = 'closest-to-date parameter required when preference is closest-to-date'
+        raise ValueError(msg)
+
     streaming_parser = StreamingParser(
         quadkey_zoom=quadkey_zoom,
         bounds=bounds,
@@ -325,9 +330,44 @@ def create_streaming(
     print(json.dumps(streaming_parser.mosaic, separators=(',', ':')))
 
 
+@click.command()
+@click.option(
+    '--shp-path',
+    required=True,
+    type=click.Path(exists=True, readable=True),
+    help='path to Natural Earth shapefile of land boundaries')
+@click.option(
+    '-b',
+    '--bounds',
+    type=str,
+    default=None,
+    help='force bounding box: "west, south, east, north"')
+@click.option(
+    '--simplify/--no-simplify',
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help=
+    'Reduce size of the output tileset as much as possible by merging leaves into parents.'
+)
+@click.argument('file', type=click.File())
+def missing_quadkeys(shp_path, bounds, simplify, file):
+    """Find quadkeys over land missing from mosaic
+    """
+    if bounds:
+        bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
+
+    mosaic = json.load(file)
+
+    fc = _missing_quadkeys(
+        mosaic=mosaic, shp_path=shp_path, bounds=bounds, simplify=simplify)
+    print(json.dumps(fc, separators=(',', ':')))
+
+
 main.add_command(search)
 main.add_command(create)
 main.add_command(create_streaming)
+main.add_command(missing_quadkeys)
 
 if __name__ == '__main__':
     main()
