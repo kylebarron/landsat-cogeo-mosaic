@@ -211,9 +211,11 @@ class StreamingParser:
             minzoom: int = 7,
             maxzoom: int = 12,
             preference: str = 'newest',
-            optimized_selection: bool = True):
+            optimized_selection: bool = True,
+            closest_to_date: Optional[datetime] = None):
 
-        if optimized_selection and preference not in ['newest', 'oldest']:
+        if optimized_selection and preference not in ['newest', 'oldest',
+                                                      'closest-to-date']:
             raise ValueError('Unsupported preference')
 
         self.quadkey_zoom = quadkey_zoom or minzoom
@@ -223,6 +225,16 @@ class StreamingParser:
         self.preference = preference
         self.optimized_selection = optimized_selection
 
+        if (preference == 'closest-to-date') and (not closest_to_date):
+            msg = 'closest_to_date required when preference is closest-to-date'
+            raise ValueError(msg)
+
+        if isinstance(closest_to_date, datetime):
+            self.closest_to_date = closest_to_date
+        else:
+            self.closest_to_date = datetime.strptime(
+                closest_to_date, "%Y-%m-%d")
+
         # Find tiles at desired zoom
         tiles = list(mercantile.tiles(*self.bounds, quadkey_zoom))
         quadkeys = [mercantile.quadkey(tile) for tile in tiles]
@@ -230,6 +242,11 @@ class StreamingParser:
         self.tiles: Dict[str, List[str]] = {k: set() for k in quadkeys}
 
     def add(self, feature: Dict):
+        """Add feature to tiles dict
+
+        Args:
+            - feature: GeoJSON Feature derived from STAC
+        """
         # Find overlapping quadkeys
         feature_geom = asShape(feature['geometry'])
         tiles = list(mercantile.tiles(*feature_geom.bounds, self.quadkey_zoom))
@@ -249,7 +266,13 @@ class StreamingParser:
 
             self._add_feature_to_quadkey(quadkey, feature)
 
-    def _add_feature_to_quadkey(self, quadkey, feature):
+    def _add_feature_to_quadkey(self, quadkey: str, feature: Dict):
+        """Add feature to specific quadkey
+
+        Args:
+            - quadkey: quadkey to add feature to
+            - feature: feature to add
+        """
         scene_id = feature['properties']['landsat:product_id']
         meta = landsat_parser(scene_id)
         path = meta['path']
@@ -285,8 +308,17 @@ class StreamingParser:
             self.tiles[quadkey].add(scene_id)
 
     def _choose_first(self, scene1: str, scene2: str) -> bool:
-        """
-        Returns True if the first is chosen, False if the second is chosen.
+        """Decide whether to choose first or second scene
+
+        Uses self.preference to decide whether to choose the first or second
+        scene passed as arguments.
+
+        Args:
+            - scene1: landsat scene id
+            - scene2: landsat scene id
+
+        Returns:
+            bool: True if the first is chosen, False if the second is chosen.
         """
         scene1_meta = landsat_parser(scene1)
         scene2_meta = landsat_parser(scene2)
@@ -299,6 +331,11 @@ class StreamingParser:
 
         if self.preference == 'oldest':
             return scene1_date < scene2_date
+
+        if self.preference == 'closest-to-date':
+            dist1 = abs(scene1_date - self.closest_to_date)
+            dist2 = abs(scene2_date - self.closest_to_date)
+            return dist1 < dist2
 
         return True
 

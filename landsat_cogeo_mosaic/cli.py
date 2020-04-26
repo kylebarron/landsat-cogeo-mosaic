@@ -267,10 +267,18 @@ def create(
 @click.option(
     '-p',
     '--preference',
-    type=click.Choice(['newest', 'oldest'], case_sensitive=False),
+    type=click.Choice(['newest', 'oldest', 'closest-to-date'],
+                      case_sensitive=False),
     default='newest',
     show_default=True,
     help='Method for choosing scenes in the same path-row')
+@click.option(
+    '--closest-to-date',
+    type=str,
+    default=None,
+    help=
+    'Date used for comparisons when preference is closest-to-date. Format must be YYYY-MM-DD'
+)
 @click.option(
     '--season',
     multiple=True,
@@ -281,7 +289,7 @@ def create(
 @click.argument('file', type=click.File())
 def create_streaming(
         min_zoom, max_zoom, quadkey_zoom, bounds, optimized_selection,
-        preference, season, file):
+        preference, closest_to_date, season, file):
     """Create MosaicJSON from STAC features without holding in memory
     """
     if bounds:
@@ -293,7 +301,8 @@ def create_streaming(
         minzoom=min_zoom,
         maxzoom=max_zoom,
         preference=preference,
-        optimized_selection=optimized_selection)
+        optimized_selection=optimized_selection,
+        closest_to_date=closest_to_date)
 
     count = 0
     for line in file:
