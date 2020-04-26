@@ -207,7 +207,7 @@ class StreamingParser:
     def __init__(
             self,
             quadkey_zoom: Optional[int] = None,
-            bounds: List[float] = [-180, -90, 180, 90],
+            bounds: List[float] = None,
             minzoom: int = 7,
             maxzoom: int = 12,
             preference: str = 'newest',
@@ -221,7 +221,7 @@ class StreamingParser:
             raise ValueError('Unsupported preference')
 
         self.quadkey_zoom = quadkey_zoom or minzoom
-        self.bounds = bounds
+        self.bounds = bounds or [-180, -90, 180, 90]
         self.minzoom = minzoom
         self.maxzoom = maxzoom
         self.preference = preference
@@ -251,7 +251,13 @@ class StreamingParser:
             - feature: GeoJSON Feature derived from STAC
         """
         # Find overlapping quadkeys
-        feature_geom = asShape(feature['geometry'])
+        if 'geometry' in feature:
+            feature_geom = asShape(feature['geometry'])
+        elif 'bounds' in feature:
+            feature_geom = box(*feature['bounds'])
+        else:
+            raise ValueError('No geometry information')
+
         tiles = list(mercantile.tiles(*feature_geom.bounds, self.quadkey_zoom))
 
         # Keep tiles that intersect the feature geometry

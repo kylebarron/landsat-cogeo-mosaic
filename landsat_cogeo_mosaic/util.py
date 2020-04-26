@@ -1,6 +1,7 @@
 import hashlib
 import json
 from datetime import datetime
+from typing import List
 
 
 def get_hash(**kwargs) -> str:
@@ -31,3 +32,12 @@ def filter_season(features, seasons):
             seasons,
             features,
         ))
+
+
+def bounds_intersect(bounds1: List[float], bounds2: List[float]) -> bool:
+    # https://stackoverflow.com/a/306332
+    if ((bounds1[0] < bounds2[2]) and (bounds1[2] > bounds2[0])
+            and (bounds1[3] > bounds2[1]) and (bounds1[1] < bounds2[3])):
+        return True
+
+    return False

@@ -336,7 +336,7 @@ def create_streaming(
     '-b',
     '--bounds',
     type=str,
-    required=True,
+    default=None,
     help='Comma-separated bounding box: "west, south, east, north"')
 @click.option(
     '--max-cloud',
@@ -416,6 +416,9 @@ def create_from_scene_list(
         msg = 'closest-to-date parameter required when preference is closest-to-date'
         raise ValueError(msg)
 
+    min_date = datetime.strptime(min_date, "%Y-%m-%d")
+    max_date = datetime.strptime(max_date, "%Y-%m-%d")
+
     streaming_parser = StreamingParser(
         quadkey_zoom=quadkey_zoom,
         bounds=bounds,
@@ -446,17 +449,17 @@ def create_from_scene_list(
         record['max_lon'] = float(record['max_lon'])
         record['acquisitionDate'] = datetime.strptime(
             record['acquisitionDate'], "%Y-%m-%d %H:%M:%S.%f")
-
-        if record['cloudCover'] > max_cloud:
-            continue
-
         record['bounds'] = [
             record['min_lon'], record['min_lat'], record['max_lon'],
             record['max_lat']
         ]
 
-        if not bounds_intersect(record['bounds'], bounds):
+        if record['cloudCover'] > max_cloud:
             continue
+
+        if bounds:
+            if not bounds_intersect(record['bounds'], bounds):
+                continue
 
         if record['acquisitionDate'] < min_date:
             continue
@@ -506,6 +509,7 @@ def missing_quadkeys(shp_path, bounds, simplify, file):
 main.add_command(search)
 main.add_command(create)
 main.add_command(create_streaming)
+main.add_command(create_from_scene_list)
 main.add_command(missing_quadkeys)
 
 if __name__ == '__main__':
