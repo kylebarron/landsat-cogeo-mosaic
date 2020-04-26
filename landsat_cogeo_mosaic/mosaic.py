@@ -284,6 +284,9 @@ class StreamingParser:
 
         inserted = False
         for existing_scene_id in self.tiles[quadkey].copy():
+            if scene_id == existing_scene_id:
+                continue
+
             existing_scene_meta = landsat_parser(existing_scene_id)
             existing_path = existing_scene_meta['path']
             existing_row = existing_scene_meta['row']
