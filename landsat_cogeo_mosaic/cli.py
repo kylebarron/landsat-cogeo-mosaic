@@ -5,6 +5,7 @@ import sys
 from datetime import datetime
 
 import click
+from dateutil.parser import parse as date_parse
 from dateutil.relativedelta import relativedelta
 
 from landsat_cogeo_mosaic.mosaic import StreamingParser, features_to_mosaicJSON
@@ -447,8 +448,7 @@ def create_from_scene_list(
         record['min_lon'] = float(record['min_lon'])
         record['max_lat'] = float(record['max_lat'])
         record['max_lon'] = float(record['max_lon'])
-        record['acquisitionDate'] = datetime.strptime(
-            record['acquisitionDate'], "%Y-%m-%d %H:%M:%S.%f")
+        record['acquisitionDate'] = date_parse(record['acquisitionDate'])
         record['bounds'] = [
             record['min_lon'], record['min_lat'], record['max_lon'],
             record['max_lat']
