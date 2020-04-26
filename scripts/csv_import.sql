@@ -25,3 +25,9 @@ ALTER TABLE scene_list ADD COLUMN pathrow TEXT;
 -- Add values to pathrow column, left padding both `path` and `row` and concatenating
 -- https://stackoverflow.com/a/6134463/7319250
 UPDATE scene_list SET pathrow = substr('000' || path, -3, 3) || substr('000' || row, -3, 3);
+
+-- Create new tier column
+ALTER TABLE scene_list ADD COLUMN tier TEXT;
+
+-- Add values to tier column, substring of productId
+UPDATE scene_list SET tier = substr(productId, -2, 2);
