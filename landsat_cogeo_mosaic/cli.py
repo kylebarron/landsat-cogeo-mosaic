@@ -7,6 +7,7 @@ import click
 from dateutil.relativedelta import relativedelta
 from shapely.geometry import asShape, box
 
+from landsat_cogeo_mosaic.db import find_records
 from landsat_cogeo_mosaic.mosaic import StreamingParser, features_to_mosaicJSON
 from landsat_cogeo_mosaic.stac import fetch_sat_api
 from landsat_cogeo_mosaic.util import filter_season, list_depth
@@ -412,9 +413,9 @@ def create_streaming(
 )
 @click.argument('file', type=click.File())
 def create_from_db(
-        sqlite_path,
-        pathrow_xw, bounds, max_cloud, min_date, max_date, min_zoom, max_zoom,
-        quadkey_zoom, optimized_selection, preference, closest_to_date, file):
+        sqlite_path, pathrow_xw, bounds, max_cloud, min_date, max_date,
+        min_zoom, max_zoom, quadkey_zoom, optimized_selection, preference,
+        closest_to_date, file):
     if bounds:
         bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
         bounds = box(*bounds)
@@ -435,15 +436,9 @@ def create_from_db(
     for pathrow, coords in pr_xw.items():
         coord_depth = list_depth(coords)
         if coord_depth == 3:
-            geometry = {
-                'type': 'Polygon',
-                'coordinates': coords
-            }
+            geometry = {'type': 'Polygon', 'coordinates': coords}
         elif coord_depth == 4:
-            geometry = {
-                'type': 'MultiPolygon',
-                'coordinates': coords
-            }
+            geometry = {'type': 'MultiPolygon', 'coordinates': coords}
 
         pathrow_geom = asShape(geometry)
         # Check in bounds
@@ -451,15 +446,16 @@ def create_from_db(
             if not pathrow_geom.intersects(bounds):
                 continue
 
-        it = find_records(sqlite_path,
-                pathrow=pathrow,
-                table_name='scene_list',
-                max_cloud=max_cloud,
-                min_date=None,
-                max_date=None,
-                preference=preference,
-                closest_to_date=closest_to_date,
-                columns=['productId'])
+        it = find_records(
+            sqlite_path,
+            pathrow=pathrow,
+            table_name='scene_list',
+            max_cloud=max_cloud,
+            min_date=None,
+            max_date=None,
+            preference=preference,
+            closest_to_date=closest_to_date,
+            columns=['productId'])
 
         for record in it:
             streaming_parser.add_by_pathrow(record['productId'], pathrow_geom)
@@ -505,7 +501,7 @@ def missing_quadkeys(shp_path, bounds, simplify, file):
 main.add_command(search)
 main.add_command(create)
 main.add_command(create_streaming)
-main.add_command(create_from_scene_list)
+main.add_command(create_from_db)
 main.add_command(missing_quadkeys)
 
 if __name__ == '__main__':
