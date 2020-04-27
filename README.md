@@ -375,3 +375,63 @@ landsat-cogeo-mosaic create \
     --season autumn \
     features.geojson > mosaic.json
 ```
+
+### Worldwide basemaps
+
+I'm interested in creating a global, cloudless basemap for each season.
+
+```bash
+mkdir -p data/out/
+for year in {2014..2019}; do
+    for month in "02" "05" "08" "11"; do
+        echo "${year}-${month}"
+        landsat-cogeo-mosaic create-from-db \
+            --sqlite-path data/scene_list.db \
+            --pathrow-xw data/pr2coords.json \
+            --min-zoom 7 \
+            --max-zoom 12 \
+            --quadkey-zoom 8 \
+            --max-cloud 5 \
+            --preference closest-to-date \
+            --closest-to-date "$year-$month-01" \
+            > "data/out/mosaic_$year_$month_01.json"
+    done
+done
+```
+
+Then include a couple in 2013 and 2020
+
+```bash
+export year=2013
+for month in "05" "08" "11"; do
+    echo "${year}-${month}"
+    landsat-cogeo-mosaic create-from-db \
+        --sqlite-path data/scene_list.db \
+        --pathrow-xw data/pr2coords.json \
+        --min-zoom 7 \
+        --max-zoom 12 \
+        --quadkey-zoom 8 \
+        --max-cloud 5 \
+        --preference closest-to-date \
+        --closest-to-date "$year-$month-01" \
+        > "data/out/mosaic_$year_$month_01.json"
+done
+export year=2020
+for month in "02" "05"; do
+    echo "${year}-${month}"
+    landsat-cogeo-mosaic create-from-db \
+        --sqlite-path data/scene_list.db \
+        --pathrow-xw data/pr2coords.json \
+        --min-zoom 7 \
+        --max-zoom 12 \
+        --quadkey-zoom 8 \
+        --max-cloud 5 \
+        --preference closest-to-date \
+        --closest-to-date "$year-$month-01" \
+        > "data/out/mosaic_$year_$month_01.json"
+done
+```
+
+For the May 2020, I'll also use that as the base for my [auto-updating landsat
+script](https://github.com/kylebarron/landsat-mosaic-latest), which updates a
+DynamoDB table as SNS notifications of new Landsat assets come in.
