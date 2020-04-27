@@ -277,6 +277,30 @@ Options:
   --help                          Show this message and exit.
 ```
 
+### Validate MosaicJSON
+
+Find missing quadkeys within `bounds` that are over land. The `shp-path` expects
+to point to the unzipped 10m [land polygons vector dataset
+shapefile](https://www.naturalearthdata.com/downloads/10m-physical-vectors/10m-land/)
+from Natural Earth.
+
+```
+Usage: landsat-cogeo-mosaic missing-quadkeys [OPTIONS] FILE
+
+  Find quadkeys over land missing from mosaic
+
+Options:
+  --shp-path PATH             path to Natural Earth shapefile of land
+                              boundaries  [required]
+
+  -b, --bounds TEXT           force bounding box: "west, south, east, north"
+  --simplify / --no-simplify  Reduce size of the output tileset as much as
+                              possible by merging leaves into parents.
+                              [default: True]
+
+  --help                      Show this message and exit.
+```
+
 ## Example
 
 ### Imagery by season (small-ish region)
