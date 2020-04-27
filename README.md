@@ -394,7 +394,7 @@ for year in {2014..2019}; do
             --max-cloud 5 \
             --preference closest-to-date \
             --closest-to-date "$year-$month-01" \
-            > "data/out/mosaic_$year_$month_01.json"
+            > "data/out/mosaic_${year}_${month}_01.json"
     done
 done
 ```
@@ -414,7 +414,7 @@ for month in "05" "08" "11"; do
         --max-cloud 5 \
         --preference closest-to-date \
         --closest-to-date "$year-$month-01" \
-        > "data/out/mosaic_$year_$month_01.json"
+        > "data/out/mosaic_${year}_${month}_01.json"
 done
 export year=2020
 for month in "02" "05"; do
@@ -428,7 +428,7 @@ for month in "02" "05"; do
         --max-cloud 5 \
         --preference closest-to-date \
         --closest-to-date "$year-$month-01" \
-        > "data/out/mosaic_$year_$month_01.json"
+        > "data/out/mosaic_${year}_${month}_01.json"
 done
 ```
 
