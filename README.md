@@ -436,6 +436,42 @@ for month in "02" "05"; do
 done
 ```
 
-For the May 2020, I'll also use that as the base for my [auto-updating landsat
+#### Latest cloudless
+
+I'll also create a "latest cloudless" mosaic, which I'll use as the base for my
+[auto-updating landsat
 script](https://github.com/kylebarron/landsat-mosaic-latest), which updates a
 DynamoDB table as SNS notifications of new Landsat assets come in.
+
+```bash
+landsat-cogeo-mosaic create-from-db \
+    `# Path to the sqlite database file` \
+    --sqlite-path data/scene_list.db \
+    `# Path to the path-row geometry file. This is stored in Git` \
+    --pathrow-xw data/pr2coords.json \
+    `# Min zoom of mosaic, 7 is a good default for Landsat` \
+    --min-zoom 7 \
+    `# Max zoom of mosaic, 12 is a good default for Landsat` \
+    --max-zoom 12 \
+    `# Zoom level to use for quadkeys` \
+    --quadkey-zoom 8 \
+    `# Maximum cloud cover. This means 5%` \
+    --max-cloud 5 \
+    `# Preference for choosing the asset for a tile` \
+    --preference newest \
+    > data/out/mosaic_latest.json
+```
+
+Then upload this mosaic to the DynamoDB table I use for the auto-updating
+landsat mosaic. At some point there will probably be a CLI in [`cogeo-mosaic`][cogeo-mosaic] to
+upload a mosaic to DynamoDB, but for now I use a script from [`naip-lambda`][naip-lambda].
+
+```bash
+git clone https://github.com/kylebarron/naip-lambda
+python naip-lambda/code/dynamodb_upload.py \
+    --table-name landsat-auto-update \
+    data/out/mosaic_latest.json
+```
+
+[cogeo-mosaic]: https://github.com/developmentseed/cogeo-mosaic
+[naip-lambda]: https://github.com/kylebarron/naip-lambda
