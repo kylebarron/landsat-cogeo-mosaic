@@ -238,6 +238,8 @@ Options:
 ```
 Usage: landsat-cogeo-mosaic create-from-db [OPTIONS]
 
+  Create MosaicJSON from SQLite database of Landsat features
+
 Options:
   --sqlite-path PATH              Path to sqlite3 db generated from scene_list
                                   [required]
@@ -247,9 +249,11 @@ Options:
                                   east, north"
 
   --max-cloud FLOAT               Maximum cloud percentage  [default: 100]
-  --min-date TEXT                 Minimum date  [default: 2013-01-01]
+  --min-date TEXT                 Minimum date, inclusive  [default:
+                                  2013-01-01]
+
   --max-date TEXT                 Maximum date, inclusive  [default:
-                                  2020-04-26]
+                                  today's date]
 
   --min-zoom INTEGER              Minimum zoom  [default: 7]
   --max-zoom INTEGER              Maximum zoom  [default: 12]
@@ -267,9 +271,9 @@ Options:
                                   multiple path-rows within a single quadkey
                                   tile.  [default: True]
 
-  -p, --preference [closest-to-date]
+  -p, --preference [newest|oldest|closest-to-date]
                                   Method for choosing scenes in the same path-
-                                  row  [default: closest-to-date]
+                                  row  [default: newest]
 
   --closest-to-date TEXT          Date used for comparisons when preference is
                                   closest-to-date. Format must be YYYY-MM-DD

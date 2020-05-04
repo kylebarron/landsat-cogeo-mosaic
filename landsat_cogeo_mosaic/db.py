@@ -102,6 +102,21 @@ def generate_query(
         order_clause.append(
             f"abs(strftime('%s', datetime({closest_to_date_timestamp}, 'unixepoch')) - strftime('%s', acquisitionDate))"
         )
+    elif preference == 'oldest':
+        # Set very early "closest_to_date"
+        closest_to_date = coerce_to_datetime('1970-01-01')
+        closest_to_date_timestamp = round(closest_to_date.timestamp())
+        order_clause.append(
+            f"abs(strftime('%s', datetime({closest_to_date_timestamp}, 'unixepoch')) - strftime('%s', acquisitionDate))"
+        )
+    elif preference == 'newest':
+        # Set "closest_to_date" in the future
+        closest_to_date = coerce_to_datetime('2050-01-01')
+        closest_to_date_timestamp = round(closest_to_date.timestamp())
+        order_clause.append(
+            f"abs(strftime('%s', datetime({closest_to_date_timestamp}, 'unixepoch')) - strftime('%s', acquisitionDate))"
+        )
+
     else:
         raise ValueError('preference not supported')
 

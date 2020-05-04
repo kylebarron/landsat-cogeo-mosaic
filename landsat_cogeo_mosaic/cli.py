@@ -362,7 +362,7 @@ def create_streaming(
     required=False,
     default='2013-01-01',
     show_default=True,
-    help='Minimum date')
+    help='Minimum date, inclusive')
 @click.option(
     '--max-date',
     type=str,
@@ -404,8 +404,9 @@ def create_streaming(
 @click.option(
     '-p',
     '--preference',
-    type=click.Choice(['closest-to-date'], case_sensitive=False),
-    default='closest-to-date',
+    type=click.Choice(['newest', 'oldest', 'closest-to-date'],
+                      case_sensitive=False),
+    default='newest',
     show_default=True,
     help='Method for choosing scenes in the same path-row')
 @click.option(
@@ -419,6 +420,8 @@ def create_from_db(
         sqlite_path, pathrow_xw, bounds, max_cloud, min_date, max_date,
         min_zoom, max_zoom, quadkey_zoom, optimized_selection, preference,
         closest_to_date):
+    """Create MosaicJSON from SQLite database of Landsat features
+    """
     if bounds:
         bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
         bounds = box(*bounds)
@@ -459,8 +462,8 @@ def create_from_db(
             pathrow=pathrow,
             table_name='scene_list',
             max_cloud=max_cloud,
-            min_date=None,
-            max_date=None,
+            min_date=min_date,
+            max_date=max_date,
             preference=preference,
             closest_to_date=closest_to_date,
             columns=['productId'])
