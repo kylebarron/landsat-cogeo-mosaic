@@ -47,7 +47,7 @@ but it grows over time as new scenes are added.
 
 ```bash
 aws s3 cp s3://landsat-pds/c1/L8/scene_list.gz data/
-gzip -c data/scene_list.gz > data/scene_list
+gunzip -c data/scene_list.gz > data/scene_list
 ```
 
 #### Import into SQLite
