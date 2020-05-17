@@ -38,7 +38,7 @@ def generate_query(
         max_cloud: float = 10,
         min_date: str = None,
         max_date: str = None,
-        preference: Optional[str] = None,
+        sort_preference: Optional[str] = None,
         tier_preference: List[str] = ['T1', 'T2', 'RT'],
         closest_to_date: Optional[Union[datetime, str]] = None,
         limit: int = 1,
@@ -55,7 +55,7 @@ def generate_query(
         - max_cloud: maximum cloud cover percent. Range from 0-100.
         - min_date: min date as str: 'YYYY-MM-DD'
         - max_date: max date as str: 'YYYY-MM-DD'
-        - preference: preference for selecting pathrow
+        - sort_preference: preference for selecting pathrow
         - tier_preference: preference of tiers, by default ['T1', 'T2', 'RT']
         - closest_to_date: datetime used for comparisons when preference is closest-to-date. Must be datetime or str of format YYYY-MM-DD
         - limit: Max number of results to return
@@ -86,31 +86,31 @@ def generate_query(
     # Order clause
     order_clause = []
 
-    if preference == 'closest-to-date':
+    if sort_preference == 'closest-to-date':
         closest_to_date = coerce_to_datetime(closest_to_date)
         closest_to_date_timestamp = round(closest_to_date.timestamp())
         order_clause.append(
             f"abs(strftime('%s', datetime({closest_to_date_timestamp}, 'unixepoch')) - strftime('%s', acquisitionDate))"
         )
-    elif preference == 'oldest':
+    elif sort_preference == 'oldest':
         # Set very early "closest_to_date"
         closest_to_date = coerce_to_datetime('1970-01-01')
         closest_to_date_timestamp = round(closest_to_date.timestamp())
         order_clause.append(
             f"abs(strftime('%s', datetime({closest_to_date_timestamp}, 'unixepoch')) - strftime('%s', acquisitionDate))"
         )
-    elif preference == 'newest':
+    elif sort_preference == 'newest':
         # Set "closest_to_date" in the future
         closest_to_date = coerce_to_datetime('2050-01-01')
         closest_to_date_timestamp = round(closest_to_date.timestamp())
         order_clause.append(
             f"abs(strftime('%s', datetime({closest_to_date_timestamp}, 'unixepoch')) - strftime('%s', acquisitionDate))"
         )
-    elif preference == 'min-cloud':
+    elif sort_preference == 'min-cloud':
         order_clause.append('cloudCover')
 
     else:
-        raise ValueError('preference not supported')
+        raise ValueError('sort_preference not supported')
 
     # Sort by tier after sorting by preference
     if tier_preference:

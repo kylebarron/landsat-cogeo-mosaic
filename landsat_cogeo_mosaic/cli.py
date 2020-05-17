@@ -381,7 +381,7 @@ def create_streaming(
     help='Maximum zoom')
 @click.option(
     '-p',
-    '--preference',
+    '--sort-preference',
     type=click.Choice(['newest', 'oldest', 'closest-to-date', 'min-cloud'],
                       case_sensitive=False),
     default='newest',
@@ -396,11 +396,11 @@ def create_streaming(
 )
 def create_from_db(
         sqlite_path, pathrow_index, max_cloud, min_date, max_date, min_zoom,
-        max_zoom, preference, closest_to_date):
+        max_zoom, sort_preference, closest_to_date):
     """Create MosaicJSON from SQLite database of Landsat features
     """
-    if (preference == 'closest-to-date') and (not closest_to_date):
-        msg = 'closest-to-date parameter required when preference is closest-to-date'
+    if (sort_preference == 'closest-to-date') and (not closest_to_date):
+        msg = 'closest-to-date parameter required when sort_preference is closest-to-date'
         raise ValueError(msg)
 
     # Use gzip file opener if path ends with .gz
@@ -445,7 +445,7 @@ def create_from_db(
                 max_cloud=max_cloud,
                 min_date=min_date,
                 max_date=max_date,
-                preference=preference,
+                sort_preference=sort_preference,
                 closest_to_date=closest_to_date,
                 columns=['productId'])
 
