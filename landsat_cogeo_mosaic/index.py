@@ -8,10 +8,6 @@ import mercantile
 import pandas as pd
 from shapely.geometry import asShape
 
-# path = '../data/WRS2_descending_0/WRS2_descending.shp'
-# bounds = [-180, -90, 180, 90]
-# scene_path = '../data/scene_list.gz'
-
 
 def create_index(pathrow_path, scene_path, bounds, quadkey_zoom):
     """Create index of path-row to quadkey_zoom
@@ -69,11 +65,9 @@ def optimize_index(gdf):
     Args:
         - gdf: joined GeoDataFrame
     """
-    grouped = gdf.groupby('quadkey')
-
     # List to collect results
     res_df = []
-    for quadkey, group in grouped:
+    for quadkey, group in gdf.groupby('quadkey'):
         res_df.append(optimize_group(group, quadkey))
 
     return pd.concat(res_df)
@@ -108,7 +102,6 @@ def optimize_group(group, quadkey):
             break
 
         # Sort by cover of region of tile that is left
-        # Sort first on scale, then on intersection percent
         group = group.sort_values('int_pct', ascending=False)
 
         # Remove top asset and add to final_assets

@@ -8,6 +8,7 @@ from dateutil.relativedelta import relativedelta
 from shapely.geometry import asShape, box
 
 from landsat_cogeo_mosaic.db import find_records
+from landsat_cogeo_mosaic.index import create_index
 from landsat_cogeo_mosaic.mosaic import StreamingParser, features_to_mosaicJSON
 from landsat_cogeo_mosaic.stac import fetch_sat_api
 from landsat_cogeo_mosaic.util import filter_season, list_depth
@@ -473,6 +474,50 @@ def create_from_db(
             break
 
     print(json.dumps(streaming_parser.mosaic, separators=(',', ':')))
+
+
+@click.command()
+@click.option(
+    '--wrs-path',
+    required=True,
+    type=click.Path(exists=True, readable=True),
+    help=
+    'Path to Shapefile (.shp) of WRS2 polygons. You can download then extract from here https://www.usgs.gov/media/files/landsat-wrs-2-descending-path-row-shapefile'
+)
+@click.option(
+    '--scene-path',
+    required=True,
+    type=click.Path(exists=True, readable=True),
+    help=
+    'Path to Shapefile (.shp) of WRS2 polygons. You can download then extract from here https://www.usgs.gov/media/files/landsat-wrs-2-descending-path-row-shapefile'
+)
+@click.option(
+    '-b',
+    '--bounds',
+    type=str,
+    default=None,
+    help='force bounding box: "west, south, east, north"')
+@click.option(
+    '--quadkey-zoom',
+    type=int,
+    required=False,
+    default=8,
+    show_default=True,
+    help=
+    'Zoom level used for quadkeys in MosaicJSON. Lower value means more assets per tile, but a smaller MosaicJSON file. Higher value means fewer assets per tile but a larger MosaicJSON file. Must be between min zoom and max zoom, inclusive.'
+)
+def index(wrs_path, scene_path, bounds, quadkey_zoom):
+    """Create optimized index of path-row to quadkey_zoom
+    """
+    if bounds:
+        bounds = tuple(map(float, bounds.split(',')))
+
+    index = create_index(
+        pathrow_path=wrs_path,
+        scene_path=scene_path,
+        bounds=bounds,
+        quadkey_zoom=quadkey_zoom)
+    print(json.dumps(index, separators=(',', ':')))
 
 
 @click.command()
