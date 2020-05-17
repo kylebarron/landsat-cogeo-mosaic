@@ -424,29 +424,46 @@ def create_from_db(
     streaming_parser = StreamingParser(
         quadkey_zoom=quadkey_zoom, minzoom=min_zoom, maxzoom=max_zoom)
 
+    # Copy max_cloud into constant that won't get modified
+    MAX_CLOUD = max_cloud
     count = 0
     for pathrow, quadkeys in pr_index.items():
         count += 1
         if count % 1000 == 0:
             print(f'Pathrow: {count}', file=sys.stderr)
 
-        it = find_records(
-            sqlite_path,
-            pathrow=pathrow,
-            table_name='scene_list',
-            max_cloud=max_cloud,
-            min_date=min_date,
-            max_date=max_date,
-            preference=preference,
-            closest_to_date=closest_to_date,
-            columns=['productId'])
+        # Reset max_cloud
+        max_cloud = MAX_CLOUD
 
-        # Add first record found to each quadkey in the pathrow-quadkey index
-        for record in it:
-            product_id = record['productId']
-            for quadkey in quadkeys:
-                streaming_parser.tiles[quadkey].add(product_id)
-            break
+        # In some equatorial regions, there are no results for max_cloud<=5
+        # So if there are no results, increase max_cloud and try again
+        while True:
+            it = find_records(
+                sqlite_path,
+                pathrow=pathrow,
+                table_name='scene_list',
+                max_cloud=max_cloud,
+                min_date=min_date,
+                max_date=max_date,
+                preference=preference,
+                closest_to_date=closest_to_date,
+                columns=['productId'])
+
+            # Add first record found to each quadkey in the pathrow-quadkey
+            # index
+            try:
+                record = next(it)
+                product_id = record['productId']
+                for quadkey in quadkeys:
+                    streaming_parser.tiles[quadkey].add(product_id)
+                break
+            except StopIteration:
+                # No results from query
+                # Increase cloud cover and try again
+                max_cloud += 5
+                msg = f'No results for pathrow {pathrow} '
+                msg += f'Trying again with max_cloud {max_cloud}'
+                print(msg, file=sys.stderr)
 
     print(json.dumps(streaming_parser.mosaic, separators=(',', ':')))
 
