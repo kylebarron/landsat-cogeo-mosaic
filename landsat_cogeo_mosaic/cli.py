@@ -458,10 +458,14 @@ def create_from_db(
                     streaming_parser.tiles[quadkey].add(product_id)
                 break
             except StopIteration:
+                msg = f'No results for pathrow {pathrow} '
+                if max_cloud >= 100:
+                    print(msg, file=sys.stderr)
+                    break
+
                 # No results from query
                 # Increase cloud cover and try again
                 max_cloud += 5
-                msg = f'No results for pathrow {pathrow} '
                 msg += f'Trying again with max_cloud {max_cloud}'
                 print(msg, file=sys.stderr)
 
