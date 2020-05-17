@@ -1,3 +1,4 @@
+import gzip
 import json
 import re
 import sys
@@ -5,13 +6,12 @@ from datetime import datetime
 
 import click
 from dateutil.relativedelta import relativedelta
-from shapely.geometry import asShape, box
 
 from landsat_cogeo_mosaic.db import find_records
 from landsat_cogeo_mosaic.index import create_index
 from landsat_cogeo_mosaic.mosaic import StreamingParser, features_to_mosaicJSON
 from landsat_cogeo_mosaic.stac import fetch_sat_api
-from landsat_cogeo_mosaic.util import filter_season, list_depth
+from landsat_cogeo_mosaic.util import filter_season
 from landsat_cogeo_mosaic.validate import missing_quadkeys as _missing_quadkeys
 
 
@@ -340,16 +340,10 @@ def create_streaming(
     required=True,
     help='Path to sqlite3 db generated from scene_list')
 @click.option(
-    '--pathrow-xw',
+    '--pathrow-index',
     type=click.Path(exists=True, readable=True),
     required=True,
-    help='Path to pathrow2coords crosswalk')
-@click.option(
-    '-b',
-    '--bounds',
-    type=str,
-    default=None,
-    help='Comma-separated bounding box: "west, south, east, north"')
+    help='Path to pathrow-quadkey index')
 @click.option(
     '--max-cloud',
     type=float,
@@ -386,23 +380,6 @@ def create_streaming(
     show_default=True,
     help='Maximum zoom')
 @click.option(
-    '--quadkey-zoom',
-    type=int,
-    required=False,
-    default=None,
-    show_default=True,
-    help=
-    'Zoom level used for quadkeys in MosaicJSON. Lower value means more assets per tile, but a smaller MosaicJSON file. Higher value means fewer assets per tile but a larger MosaicJSON file. Must be between min zoom and max zoom, inclusive.'
-)
-@click.option(
-    '--optimized-selection/--no-optimized-selection',
-    is_flag=True,
-    default=True,
-    show_default=True,
-    help=
-    'Optimize assets in tile. Only a single asset per path-row will be included in each quadkey. Note that there will usually be multiple path-rows within a single quadkey tile.'
-)
-@click.option(
     '-p',
     '--preference',
     type=click.Choice(['newest', 'oldest', 'closest-to-date'],
@@ -418,45 +395,40 @@ def create_streaming(
     'Date used for comparisons when preference is closest-to-date. Format must be YYYY-MM-DD'
 )
 def create_from_db(
-        sqlite_path, pathrow_xw, bounds, max_cloud, min_date, max_date,
-        min_zoom, max_zoom, quadkey_zoom, optimized_selection, preference,
-        closest_to_date):
+        sqlite_path, pathrow_index, max_cloud, min_date, max_date, min_zoom,
+        max_zoom, preference, closest_to_date):
     """Create MosaicJSON from SQLite database of Landsat features
     """
-    if bounds:
-        bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
-        bounds = box(*bounds)
-
     if (preference == 'closest-to-date') and (not closest_to_date):
         msg = 'closest-to-date parameter required when preference is closest-to-date'
         raise ValueError(msg)
 
-    with open(pathrow_xw) as f:
-        pr_xw = json.load(f)
+    # Use gzip file opener if path ends with .gz
+    file_opener = gzip.open if pathrow_index.endswith('.gz') else open
+    mode = 'rt' if pathrow_index.endswith('.gz') else 'r'
 
+    # Set jsonl to true if `.json` is in filename
+    jsonl = '.jsonl' in pathrow_index
+
+    with file_opener(pathrow_index, mode) as f:
+        if jsonl:
+            pr_index = {}
+            for line in f:
+                pr_index.update(json.loads(line))
+
+        else:
+            pr_index = json.load(f)
+
+    # Find quadkey zoom from index
+    quadkey_zoom = len(list(pr_index.values())[0][0])
     streaming_parser = StreamingParser(
-        quadkey_zoom=quadkey_zoom,
-        bounds=bounds,
-        minzoom=min_zoom,
-        maxzoom=max_zoom)
+        quadkey_zoom=quadkey_zoom, minzoom=min_zoom, maxzoom=max_zoom)
 
     count = 0
-    for pathrow, coords in pr_xw.items():
+    for pathrow, quadkeys in pr_index.items():
         count += 1
         if count % 1000 == 0:
             print(f'Pathrow: {count}', file=sys.stderr)
-
-        coord_depth = list_depth(coords)
-        if coord_depth == 3:
-            geometry = {'type': 'Polygon', 'coordinates': coords}
-        elif coord_depth == 4:
-            geometry = {'type': 'MultiPolygon', 'coordinates': coords}
-
-        pathrow_geom = asShape(geometry)
-        # Check in bounds
-        if bounds:
-            if not pathrow_geom.intersects(bounds):
-                continue
 
         it = find_records(
             sqlite_path,
@@ -469,8 +441,11 @@ def create_from_db(
             closest_to_date=closest_to_date,
             columns=['productId'])
 
+        # Add first record found to each quadkey in the pathrow-quadkey index
         for record in it:
-            streaming_parser.add_by_pathrow(record['productId'], pathrow_geom)
+            product_id = record['productId']
+            for quadkey in quadkeys:
+                streaming_parser.tiles[quadkey].add(product_id)
             break
 
     print(json.dumps(streaming_parser.mosaic, separators=(',', ':')))
