@@ -557,11 +557,12 @@ def missing_quadkeys(shp_path, bounds, simplify, file):
     print(json.dumps(fc, separators=(',', ':')))
 
 
-main.add_command(search)
 main.add_command(create)
-main.add_command(create_streaming)
 main.add_command(create_from_db)
+main.add_command(create_streaming)
+main.add_command(index)
 main.add_command(missing_quadkeys)
+main.add_command(search)
 
 if __name__ == '__main__':
     main()
