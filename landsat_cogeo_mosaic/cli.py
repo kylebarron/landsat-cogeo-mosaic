@@ -495,7 +495,8 @@ def create_from_db(
     '-b',
     '--bounds',
     type=str,
-    default=None,
+    default='-180,-90,180,90',
+    show_default=True,
     help='force bounding box: "west, south, east, north"')
 @click.option(
     '--quadkey-zoom',
