@@ -517,7 +517,10 @@ def index(wrs_path, scene_path, bounds, quadkey_zoom):
         scene_path=scene_path,
         bounds=bounds,
         quadkey_zoom=quadkey_zoom)
-    print(json.dumps(index, separators=(',', ':')))
+
+    lines = [{pr: quadkeys} for pr, quadkeys in index.items()]
+    for line in lines:
+        print(json.dumps(line, separators=(',', ':')))
 
 
 @click.command()
