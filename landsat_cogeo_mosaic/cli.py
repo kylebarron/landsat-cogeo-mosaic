@@ -382,7 +382,7 @@ def create_streaming(
 @click.option(
     '-p',
     '--preference',
-    type=click.Choice(['newest', 'oldest', 'closest-to-date'],
+    type=click.Choice(['newest', 'oldest', 'closest-to-date', 'min-cloud'],
                       case_sensitive=False),
     default='newest',
     show_default=True,

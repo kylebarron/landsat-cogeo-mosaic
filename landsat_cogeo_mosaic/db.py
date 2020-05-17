@@ -85,16 +85,6 @@ def generate_query(
 
     # Order clause
     order_clause = []
-    if tier_preference:
-        # https://stackoverflow.com/a/3303876
-        # `tier` is name of column
-        s = 'CASE tier '
-        s += ' '.join([
-            f'WHEN "{val}" THEN {ind}'
-            for ind, val in enumerate(tier_preference)
-        ])
-        s += ' END'
-        order_clause.append(s)
 
     if preference == 'closest-to-date':
         closest_to_date = coerce_to_datetime(closest_to_date)
@@ -116,9 +106,23 @@ def generate_query(
         order_clause.append(
             f"abs(strftime('%s', datetime({closest_to_date_timestamp}, 'unixepoch')) - strftime('%s', acquisitionDate))"
         )
+    elif preference == 'min-cloud':
+        order_clause.append('cloudCover')
 
     else:
         raise ValueError('preference not supported')
+
+    # Sort by tier after sorting by preference
+    if tier_preference:
+        # https://stackoverflow.com/a/3303876
+        # `tier` is name of column
+        s = 'CASE tier '
+        s += ' '.join([
+            f'WHEN "{val}" THEN {ind}'
+            for ind, val in enumerate(tier_preference)
+        ])
+        s += ' END'
+        order_clause.append(s)
 
     if order_clause:
         execute_str += f" ORDER BY {', '.join(order_clause)}"
