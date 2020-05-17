@@ -488,9 +488,7 @@ def create_from_db(
     '--scene-path',
     required=True,
     type=click.Path(exists=True, readable=True),
-    help=
-    'Path to Shapefile (.shp) of WRS2 polygons. You can download then extract from here https://www.usgs.gov/media/files/landsat-wrs-2-descending-path-row-shapefile'
-)
+    help='Path to CSV of scene metadata downloaded from AWS S3.')
 @click.option(
     '-b',
     '--bounds',
