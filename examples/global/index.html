@@ -485,7 +485,7 @@
     <span class="nv">max_date</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">year</span><span class="si">}</span><span class="s2">-06-21&quot;</span>
     landsat-cogeo-mosaic create-from-db <span class="se">\</span>
         --sqlite-path data/scene_list.db <span class="se">\</span>
-        --pathrow-index data/pr_index.jsonl.gz <span class="se">\</span>
+        --pathrow-index data/pr_index.json.gz <span class="se">\</span>
         --min-zoom <span class="m">7</span> <span class="se">\</span>
         --max-zoom <span class="m">12</span> <span class="se">\</span>
         --min-date <span class="s2">&quot;</span><span class="nv">$min_date</span><span class="s2">&quot;</span> <span class="se">\</span>
@@ -503,7 +503,7 @@
     <span class="nv">max_date</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">year</span><span class="si">}</span><span class="s2">-09-21&quot;</span>
     landsat-cogeo-mosaic create-from-db <span class="se">\</span>
         --sqlite-path data/scene_list.db <span class="se">\</span>
-        --pathrow-index data/pr_index.jsonl.gz <span class="se">\</span>
+        --pathrow-index data/pr_index.json.gz <span class="se">\</span>
         --min-zoom <span class="m">7</span> <span class="se">\</span>
         --max-zoom <span class="m">12</span> <span class="se">\</span>
         --min-date <span class="s2">&quot;</span><span class="nv">$min_date</span><span class="s2">&quot;</span> <span class="se">\</span>
@@ -521,7 +521,7 @@
     <span class="nv">max_date</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">year</span><span class="si">}</span><span class="s2">-12-21&quot;</span>
     landsat-cogeo-mosaic create-from-db <span class="se">\</span>
         --sqlite-path data/scene_list.db <span class="se">\</span>
-        --pathrow-index data/pr_index.jsonl.gz <span class="se">\</span>
+        --pathrow-index data/pr_index.json.gz <span class="se">\</span>
         --min-zoom <span class="m">7</span> <span class="se">\</span>
         --max-zoom <span class="m">12</span> <span class="se">\</span>
         --min-date <span class="s2">&quot;</span><span class="nv">$min_date</span><span class="s2">&quot;</span> <span class="se">\</span>
@@ -541,7 +541,7 @@
     <span class="c1"># echo $max_date</span>
     landsat-cogeo-mosaic create-from-db <span class="se">\</span>
         --sqlite-path data/scene_list.db <span class="se">\</span>
-        --pathrow-index data/pr_index.jsonl.gz <span class="se">\</span>
+        --pathrow-index data/pr_index.json.gz <span class="se">\</span>
         --min-zoom <span class="m">7</span> <span class="se">\</span>
         --max-zoom <span class="m">12</span> <span class="se">\</span>
         --min-date <span class="s2">&quot;</span><span class="nv">$min_date</span><span class="s2">&quot;</span> <span class="se">\</span>
@@ -561,7 +561,7 @@ DynamoDB table as SNS notifications of new Landsat assets come in.</p>
     <span class="sb">`</span><span class="c1"># Path to the sqlite database file` \</span>
     --sqlite-path data/scene_list.db <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Path to the path-row geometry file. This is stored in Git` \</span>
-    --pathrow-index data/pr_index.jsonl.gz <span class="se">\</span>
+    --pathrow-index data/pr_index.json.gz <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Min zoom of mosaic, 7 is a good default for Landsat` \</span>
     --min-zoom <span class="m">7</span> <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Max zoom of mosaic, 12 is a good default for Landsat` \</span>
