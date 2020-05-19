@@ -46,15 +46,12 @@ def get_mosaic_geometries(mosaic, gdf):
         all_assets.update(assets)
 
     assets_df = pd.DataFrame(all_assets, columns=['asset'])
-    assets_df['pathrow'] = assets_df['asset'].apply(get_pathrow)
+    meta = pd.DataFrame.from_records(assets_df['asset'].apply(landsat_parser))
+    meta['pathrow'] = meta['path'].str.zfill(3) + meta['row'].str.zfill(3)
+    assets_df = pd.concat([assets_df, meta], axis=1)
+    # Drop asset, in favor of identical `scene` column
+    assets_df = assets_df.drop('asset', axis=1)
 
     merged = pd.merge(gdf, assets_df, left_on='PR', right_on='pathrow')
     merged = merged.drop('PR', axis=1)
     return merged
-
-
-def get_pathrow(asset):
-    """Get pathrow for asset string
-    """
-    meta = landsat_parser(asset)
-    return meta['path'].zfill(3) + meta['row'].zfill(3)
