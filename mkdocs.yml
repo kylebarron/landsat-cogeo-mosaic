@@ -1,0 +1,95 @@
+# Project Information
+site_name: 'landsat-cogeo-mosaic'
+site_description: 'mosaicJSON tools for Landsat 8 imagery'
+site_author: 'Kyle Barron'
+
+docs_dir: 'docs'
+site_dir: 'build'
+
+# Repository
+repo_name: 'kylebarron/landsat-cogeo-mosaic'
+repo_url: 'https://github.com/kylebarron/landsat-cogeo-mosaic'
+edit_uri: 'blob/master/docs/src/'
+site_url: 'https://kylebarron.dev/landsat-cogeo-mosaic/'
+
+# Social links
+extra:
+  social:
+    - icon: 'fontawesome/brands/github'
+      link: 'https://github.com/kylebarron'
+    - icon: 'fontawesome/brands/twitter'
+      link: 'https://twitter.com/kylebarron2'
+
+# Layout
+nav:
+  - Home: 'index.md'
+  # - Getting Started: 'getting_started.md'
+  # - Jupyter Notebook Example: 'https://nbviewer.jupyter.org/github/kylebarron/stata_kernel/blob/master/examples/Example.ipynb'
+  # - Using Jupyter:
+  #   - Introduction: 'using_jupyter/intro.md'
+  #   - JupyterLab: 'using_jupyter/lab.md'
+  #   - Hydrogen in Atom: 'using_jupyter/atom.md'
+  #   - Jupyter Notebook: 'using_jupyter/notebook.md'
+  #   - Nteract: 'using_jupyter/nteract.md'
+  #   - Jupyter QtConsole: 'using_jupyter/qtconsole.md'
+  #   - Jupyter Console: 'using_jupyter/console.md'
+  #   - Remote Servers: 'using_jupyter/remote.md'
+  # - Using the Stata Kernel:
+  #   - Introduction: 'using_stata_kernel/intro.md'
+  #   - Configuration: 'using_stata_kernel/configuration.md'
+  #   - Magics: 'using_stata_kernel/magics.md'
+  #   - Limitations: 'using_stata_kernel/limitations.md'
+  #   - Troubleshooting: 'using_stata_kernel/troubleshooting.md'
+  # - Comparison with IPyStata: 'comparison_with_ipystata.md'
+  # - Contributing: 'CONTRIBUTING.md'
+  # - Addendum: 'addendum.md'
+  # - License: 'license.md'
+
+# Theme
+theme:
+  icon:
+    logo: 'material/home'
+    repo: 'fontawesome/brands/github'
+  name: 'material'
+  language: 'en'
+  palette:
+    primary: 'blue'
+    accent:  'light blue'
+  font:
+    text: 'Nunito Sans'
+    code: 'Fira Code'
+
+# Uncomment if I use math in the docs in the future
+# extra_javascript:
+#     - helpers/helpers.js
+#     - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+
+# These extensions are chosen to be a superset of Pandoc's Markdown.
+# This way, I can write in Pandoc's Markdown and have it be supported here.
+# https://pandoc.org/MANUAL.html
+markdown_extensions:
+    - admonition
+    - attr_list
+    - codehilite:
+        guess_lang: false
+    - def_list
+    - footnotes
+    - pymdownx.arithmatex
+    - pymdownx.betterem
+    - pymdownx.caret:
+        insert: false
+    - pymdownx.details
+    - pymdownx.emoji
+    - pymdownx.escapeall:
+        hardbreak: true
+        nbsp: true
+    - pymdownx.magiclink:
+        hide_protocol: true
+        repo_url_shortener: true
+    - pymdownx.smartsymbols
+    - pymdownx.superfences
+    - pymdownx.tasklist:
+        custom_checkbox: true
+    - pymdownx.tilde
+    - toc:
+        permalink: true

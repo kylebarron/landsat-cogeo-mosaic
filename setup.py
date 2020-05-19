@@ -19,6 +19,10 @@ with open('requirements_dev.txt') as test_requirements_file:
 
 setup_requirements = ['setuptools >= 38.6.0', 'twine >= 1.11.0']
 
+extra_reqs = {
+    "docs": ["mkdocs", "mkdocs-material"],
+}
+
 # yapf: disable
 setup(
     author="Kyle Barron",
@@ -50,6 +54,7 @@ setup(
     name='landsat_cogeo_mosaic',
     packages=find_packages(include=['landsat_cogeo_mosaic', 'landsat_cogeo_mosaic.*']),
     setup_requires=setup_requirements,
+    extras_require=extra_reqs,
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/kylebarron/landsat-cogeo-mosaic',
