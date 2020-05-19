@@ -9,5 +9,5 @@ script:
   - git config user.email "kylebarron2@gmail.com";
   - git remote add gh-token "https://kylebarron:${GITHUB_TOKEN}@github.com/kylebarron/landsat-cogeo-mosaic.git";
   - git fetch gh-token && git fetch gh-token gh-pages:gh-pages;
-  - pip install -IU -r mkdocs mkdocs-material;
+  - pip install -IU mkdocs mkdocs-material;
   - mkdocs gh-deploy -v --clean --remote-name gh-token -b gh-pages --force;
