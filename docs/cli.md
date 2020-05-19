@@ -112,7 +112,7 @@ landsat-cogeo-mosaic create-from-db \
     `# Path to the sqlite database file` \
     --sqlite-path data/scene_list.db \
     `# Path to the path-row to quadkey index file. This is stored in Git` \
-    --pathrow-index data/pr_index.jsonl.gz \
+    --pathrow-index data/pr_index.json.gz \
     `# Min zoom of mosaic, 7 is a good default for Landsat` \
     --min-zoom 7 \
     `# Max zoom of mosaic, 12 is a good default for Landsat` \
@@ -162,7 +162,7 @@ landsat-cogeo-mosaic index \
     --scene-path data/scene_list.gz \
     --quadkey-zoom 8 \
     | gzip \
-    > data/pr_index.jsonl.gz
+    > data/pr_index.json.gz
 ```
 
 ### `missing-quadkeys`

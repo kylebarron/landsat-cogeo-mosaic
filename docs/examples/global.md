@@ -13,7 +13,7 @@ for year in {2014..2019}; do
     max_date="${year}-06-21"
     landsat-cogeo-mosaic create-from-db \
         --sqlite-path data/scene_list.db \
-        --pathrow-index data/pr_index.jsonl.gz \
+        --pathrow-index data/pr_index.json.gz \
         --min-zoom 7 \
         --max-zoom 12 \
         --min-date "$min_date" \
@@ -33,7 +33,7 @@ for year in {2013..2019}; do
     max_date="${year}-09-21"
     landsat-cogeo-mosaic create-from-db \
         --sqlite-path data/scene_list.db \
-        --pathrow-index data/pr_index.jsonl.gz \
+        --pathrow-index data/pr_index.json.gz \
         --min-zoom 7 \
         --max-zoom 12 \
         --min-date "$min_date" \
@@ -53,7 +53,7 @@ for year in {2013..2019}; do
     max_date="${year}-12-21"
     landsat-cogeo-mosaic create-from-db \
         --sqlite-path data/scene_list.db \
-        --pathrow-index data/pr_index.jsonl.gz \
+        --pathrow-index data/pr_index.json.gz \
         --min-zoom 7 \
         --max-zoom 12 \
         --min-date "$min_date" \
@@ -75,7 +75,7 @@ for year in {2014..2020}; do
     # echo $max_date
     landsat-cogeo-mosaic create-from-db \
         --sqlite-path data/scene_list.db \
-        --pathrow-index data/pr_index.jsonl.gz \
+        --pathrow-index data/pr_index.json.gz \
         --min-zoom 7 \
         --max-zoom 12 \
         --min-date "$min_date" \
@@ -98,7 +98,7 @@ landsat-cogeo-mosaic create-from-db \
     `# Path to the sqlite database file` \
     --sqlite-path data/scene_list.db \
     `# Path to the path-row geometry file. This is stored in Git` \
-    --pathrow-index data/pr_index.jsonl.gz \
+    --pathrow-index data/pr_index.json.gz \
     `# Min zoom of mosaic, 7 is a good default for Landsat` \
     --min-zoom 7 \
     `# Max zoom of mosaic, 12 is a good default for Landsat` \
