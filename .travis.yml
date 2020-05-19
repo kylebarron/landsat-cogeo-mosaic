@@ -4,7 +4,7 @@ notifications:
 python:
     - "3.7"
     - "3.8"
-after_success:
+script:
   - git config user.name "Kyle Barron";
   - git config user.email "kylebarron2@gmail.com";
   - git remote add gh-token "https://kylebarron:${GITHUB_TOKEN}@github.com/kylebarron/landsat-cogeo-mosaic.git";
