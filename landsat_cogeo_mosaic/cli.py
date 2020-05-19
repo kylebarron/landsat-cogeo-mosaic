@@ -463,15 +463,13 @@ def index(wrs_path, scene_path, bounds, quadkey_zoom):
     if bounds:
         bounds = tuple(map(float, bounds.split(',')))
 
-    index = create_index(
+    _index = create_index(
         pathrow_path=wrs_path,
         scene_path=scene_path,
         bounds=bounds,
         quadkey_zoom=quadkey_zoom)
 
-    lines = [{pr: quadkeys} for pr, quadkeys in index.items()]
-    for line in lines:
-        print(json.dumps(line, separators=(',', ':')))
+    print(json.dumps(_index, separators=(',', ':')))
 
 
 @click.command()
