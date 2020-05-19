@@ -30,18 +30,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import sys
 from copy import deepcopy
 from datetime import datetime
-from typing import Dict, List, Optional, Callable
+from typing import Callable, Dict, List, Optional
 
 import mercantile
+from cogeo_mosaic.mosaic import MosaicJSON
 from rio_tiler.io.landsat8 import landsat_parser
-from rtree import index
 from shapely.geometry import Polygon, asShape, box
+
+
+def landsat_accessor(feature: Dict):
+    return feature['properties']['landsat:product_id']
 
 
 def features_to_mosaicJSON(
         features: List[Dict],
         quadkey_zoom: int = None,
-        bounds: List[float] = None,
         minzoom: int = 7,
         maxzoom: int = 12,
         optimized_selection: bool = True,
@@ -75,63 +78,13 @@ def features_to_mosaicJSON(
     out : dict
         MosaicJSON definition.
     """
-    # Instantiate rtree
-    idx = index.Index()
-
-    # Insert features
-    for i in range(len(features)):
-        feature = features[i]
-        idx.insert(i, asShape(feature['geometry']).bounds)
-
-    # Find tiles at desired zoom
-    bounds = bounds or idx.bounds
-    quadkey_zoom = quadkey_zoom or minzoom
-    tiles = mercantile.tiles(*bounds, quadkey_zoom)
-
-    # Define mosaic
-    mosaic_definition = {
-        'mosaicjson': "0.0.2",
-        'minzoom': minzoom,
-        'maxzoom': maxzoom,
-        'quadkey_zoom': quadkey_zoom,
-        'bounds': bounds,
-        'center': [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2,
-                   minzoom],
-        'tiles': {},
-    }
-
-    # Loop over tiles
-    for tile in tiles:
-        quadkey = mercantile.quadkey(tile)
-        candidate_idx = list(idx.intersection(mercantile.bounds(tile)))
-
-        if not candidate_idx:
-            continue
-
-        # Retrieve actual features
-        candidates = [features[i] for i in candidate_idx]
-
-        # Filter exact intersections
-        tile_geom = box(*mercantile.bounds(tile))
-        assets = [
-            x for x in candidates
-            if tile_geom.intersects(asShape(x['geometry']))
-        ]
-
-        if not assets:
-            continue
-
-        # Optimize assets to be added
-        if optimized_selection:
-            assets = optimize_assets(tile, assets)
-
-        # Add to mosaic definition
-        if assets:
-            mosaic_definition["tiles"][quadkey] = [
-                scene["properties"]["landsat:product_id"] for scene in assets
-            ]
-
-    return mosaic_definition
+    mosaic = MosaicJSON.from_features(
+        features=features,
+        minzoom=minzoom,
+        maxzoom=maxzoom,
+        quadkey_zoom=quadkey_zoom,
+        accessor=landsat_accessor)
+    return mosaic.dict(exclude_none=True)
 
 
 def optimize_assets(tile, assets):
