@@ -4,19 +4,6 @@ notifications:
 python:
     - "3.7"
     - "3.8"
-install:
-    - pip install -r requirements.txt -r requirements_dev.txt
-    - python -m stata_kernel.install
-script:
-    - python -m pytest tests/test_mata_lexer.py tests/test_stata_lexer.py
-    - python setup.py install
-# deploy:
-#     provider: pages
-#     skip-cleanup: true
-#     github-token: $GITHUB_TOKEN
-#     keep-history: true
-#     target-branch: gh-pages
-#     committer-from-gh: true
 after_success:
   - git config user.name "Kyle Barron";
   - git config user.email "kylebarron2@gmail.com";
