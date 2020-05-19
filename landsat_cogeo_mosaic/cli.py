@@ -11,7 +11,7 @@ from landsat_cogeo_mosaic.db import find_records
 from landsat_cogeo_mosaic.index import create_index
 from landsat_cogeo_mosaic.mosaic import StreamingParser, features_to_mosaicJSON
 from landsat_cogeo_mosaic.stac import search as _search
-from landsat_cogeo_mosaic.util import filter_season
+from landsat_cogeo_mosaic.util import filter_season, index_data_path
 from landsat_cogeo_mosaic.validate import missing_quadkeys as _missing_quadkeys
 from landsat_cogeo_mosaic.visualize import visualize as _visualize
 
@@ -298,8 +298,9 @@ def create_streaming(
 @click.option(
     '--pathrow-index',
     type=click.Path(exists=True, readable=True),
-    required=True,
-    help='Path to pathrow-quadkey index')
+    required=False,
+    default=None,
+    help='Path to pathrow-quadkey index. Loads bundled index by default.')
 @click.option(
     '--max-cloud',
     type=float,
@@ -358,6 +359,9 @@ def create_from_db(
     if (sort_preference == 'closest-to-date') and (not closest_to_date):
         msg = 'closest-to-date parameter required when sort_preference is closest-to-date'
         raise ValueError(msg)
+
+    # Load index from inside package if not provided
+    pathrow_index = pathrow_index or index_data_path()
 
     # Use gzip file opener if path ends with .gz
     file_opener = gzip.open if pathrow_index.endswith('.gz') else open
