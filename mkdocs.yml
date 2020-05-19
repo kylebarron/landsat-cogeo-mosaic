@@ -26,6 +26,8 @@ nav:
   - Install: 'install.md'
   - Examples:
     - Global Basemap: 'examples/global.md'
+    - STAC Features: 'examples/stac.md'
+  - CLI: 'cli.md'
 
 # Theme
 theme:
