@@ -3,6 +3,7 @@ import json
 import re
 import sys
 from datetime import datetime
+from pathlib import Path
 
 import click
 from dateutil.relativedelta import relativedelta
@@ -13,6 +14,7 @@ from landsat_cogeo_mosaic.mosaic import StreamingParser, features_to_mosaicJSON
 from landsat_cogeo_mosaic.stac import fetch_sat_api
 from landsat_cogeo_mosaic.util import filter_season
 from landsat_cogeo_mosaic.validate import missing_quadkeys as _missing_quadkeys
+from landsat_cogeo_mosaic.visualize import visualize as _visualize
 
 
 @click.group()
@@ -552,12 +554,47 @@ def missing_quadkeys(shp_path, bounds, simplify, file):
     print(json.dumps(fc, separators=(',', ':')))
 
 
+@click.command()
+@click.option(
+    '-p',
+    '--wrs-path',
+    required=True,
+    type=click.Path(exists=True, readable=True),
+    help=
+    'Path to Shapefile (.shp) of WRS2 polygons. You can download then extract from here https://www.usgs.gov/media/files/landsat-wrs-2-descending-path-row-shapefile'
+)
+@click.option(
+    '--api-key',
+    required=False,
+    default=None,
+    type=str,
+    help=
+    'Mapbox API key. Can also be read from the MAPBOX_API_KEY environment variable.'
+)
+@click.argument('mosaic-paths', type=click.Path(exists=True), nargs=-1)
+def visualize(wrs_path, mosaic_paths, api_key):
+    """Visualize Landsat mosaic in kepler.gl
+    """
+    mosaics = []
+    for mosaic_path in mosaic_paths:
+        with open(mosaic_path) as f:
+            mosaics.append(json.load(f))
+
+    mosaic_names = [Path(path).name for path in mosaic_paths]
+    _visualize(
+        mosaics=mosaics,
+        pathrow_path=wrs_path,
+        names=mosaic_names,
+        api_key=api_key)
+
+
 main.add_command(create)
 main.add_command(create_from_db)
 main.add_command(create_streaming)
 main.add_command(index)
 main.add_command(missing_quadkeys)
 main.add_command(search)
+main.add_command(visualize)
 
 if __name__ == '__main__':
     main()
