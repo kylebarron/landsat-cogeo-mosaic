@@ -27,15 +27,18 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+import gzip
+import json
 import sys
-from copy import deepcopy
 from datetime import datetime
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Union
 
 import mercantile
 from cogeo_mosaic.mosaic import MosaicJSON
 from rio_tiler.io.landsat8 import landsat_parser
-from shapely.geometry import Polygon, asShape, box
+from shapely.geometry import asShape, box
+
+from landsat_cogeo_mosaic.util import index_data_path
 
 
 def landsat_accessor(feature: Dict):
@@ -47,8 +50,8 @@ def features_to_mosaicJSON(
         quadkey_zoom: int = None,
         minzoom: int = 7,
         maxzoom: int = 12,
-        optimized_selection: bool = True,
-) -> Dict:
+        index: Union[bool, Dict] = True,
+        sort='min-cloud') -> Dict:
     """
     Create a mosaicJSON from stac features.
 
@@ -78,76 +81,73 @@ def features_to_mosaicJSON(
     out : dict
         MosaicJSON definition.
     """
-    mosaic = MosaicJSON.from_features(
-        features=features,
+    if not index:
+        mosaic = MosaicJSON.from_features(
+            features=features,
+            minzoom=minzoom,
+            maxzoom=maxzoom,
+            quadkey_zoom=quadkey_zoom,
+            accessor=landsat_accessor)
+        return mosaic.dict(exclude_none=True)
+
+    if not isinstance(index, dict):
+        path = index_data_path()
+        with gzip.open(path, 'rt') as f:
+            index = json.load(f)
+
+    pr_keys = set(index.keys())
+    sorted_features = {}
+    for feature in features:
+        pathrow = feature['properties']['eo:column'].zfill(
+            3) + feature['properties']['eo:row'].zfill(3)
+        if pathrow not in pr_keys:
+            continue
+
+        sorted_features[pathrow] = sorted_features.get(pathrow, [])
+        sorted_features[pathrow].append(feature)
+
+    tiles = {}
+    for pathrow, feats in sorted_features.items():
+        if sort == 'min-cloud':
+            selected = min(
+                feats, key=lambda x: x['properties']['eo:cloud_cover'])
+        elif sort == 'max-cloud':
+            selected = max(
+                feats, key=lambda x: x['properties']['eo:cloud_cover'])
+        else:
+            selected = feats[0]
+
+        product_id = landsat_accessor(selected)
+        quadkeys = index[pathrow]
+
+        for qk in quadkeys:
+            tiles[qk] = tiles.get(qk, set())
+            tiles[qk].add(product_id)
+
+    tile_bounds = [
+        mercantile.bounds(mercantile.quadkey_to_tile(qk))
+        for qk in tiles.keys()
+    ]
+
+    minx = 180
+    miny = 90
+    maxx = -180
+    maxy = -90
+    for tb in tile_bounds:
+        minx = min(minx, tb[0])
+        miny = min(miny, tb[1])
+        maxx = max(maxx, tb[2])
+        maxy = max(maxy, tb[3])
+
+    bounds = [minx, miny, maxx, maxy]
+    mosaic = MosaicJSON(
+        mosaicjson="0.0.2",
         minzoom=minzoom,
         maxzoom=maxzoom,
         quadkey_zoom=quadkey_zoom,
-        accessor=landsat_accessor)
+        bounds=bounds,
+        tiles=tiles)
     return mosaic.dict(exclude_none=True)
-
-
-def optimize_assets(tile, assets):
-    """Try to find the minimal number of assets to cover tile
-
-    This optimization implies _both_ that
-
-    - assets will be ordered in the MosaicJSON in order of cover of the entire tile
-    - the total number of assets is kept to a minimum
-
-    Computing the absolute minimum of assets to cover the tile may not in
-    general be possible in finite time, so this is a naive method that should
-    work relatively well for this use case.
-    """
-    if not assets:
-        return assets
-
-    final_assets = []
-    tile_geom = box(*mercantile.bounds(tile))
-    assets = deepcopy(assets)
-
-    while True:
-        # Sort by cover of region of tile that is left
-        assets = sort_assets_by_cover(tile_geom, assets)
-
-        # Remove top asset and add to final_assets
-        top_asset = assets.pop(0)
-        final_assets.append(top_asset)
-
-        # Recompute tile_geom, removing overlap with top_asset
-        tile_geom = tile_geom.difference(asShape(top_asset['geometry']))
-
-        # When total area is covered, stop
-        if tile_geom.area == 0:
-            break
-
-        # If all assets are spent and the tile still not covered, raise
-        # exception
-        if len(assets) == 0:
-            print(
-                f'Warning: Not enough assets to cover {tile}', file=sys.stderr)
-            break
-
-    return final_assets
-
-
-def sort_assets_by_cover(tile_geom: Polygon, assets: List[Dict]) -> List[Dict]:
-    """Sort assets by cover percent of tile
-    """
-    # Add overlap percent to properties
-    new_assets = []
-    for asset in assets:
-        asset['properties']['tile_overlap'] = pct_overlap(tile_geom, asset)
-        new_assets.append(asset)
-
-    # Sort by tile overlap
-    return sorted(
-        new_assets, key=lambda k: k['properties']['tile_overlap'], reverse=True)
-
-
-def pct_overlap(tile_geom: Polygon, asset: Dict) -> float:
-    asset_geom = asShape(asset['geometry'])
-    return tile_geom.intersection(asset_geom).area / tile_geom.area
 
 
 class StreamingParser:
