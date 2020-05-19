@@ -1,7 +1,27 @@
 import hashlib
 import json
+import os
 from datetime import datetime
+from pathlib import Path
 from typing import List
+
+from pkg_resources import resource_filename
+
+
+def index_data_path():
+    """Find path to bundled pr_index.json.gz
+    """
+    pkg_path = 'data/pr_index.json.gz'
+    lambda_root = os.getenv('LAMBDA_TASK_ROOT')
+    if lambda_root:
+        return f'{lambda_root}/landsat_mosaic_latest/{pkg_path}'
+
+    try:
+        return resource_filename('landsat_cogeo_mosaic', pkg_path)
+    except ModuleNotFoundError:
+        pass
+
+    return str((Path(__file__) / pkg_path).resolve())
 
 
 def get_hash(**kwargs) -> str:
