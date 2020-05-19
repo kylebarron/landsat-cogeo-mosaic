@@ -10,7 +10,7 @@ import click
 from landsat_cogeo_mosaic.db import find_records
 from landsat_cogeo_mosaic.index import create_index
 from landsat_cogeo_mosaic.mosaic import StreamingParser, features_to_mosaicJSON
-from landsat_cogeo_mosaic.stac import search
+from landsat_cogeo_mosaic.stac import search as _search
 from landsat_cogeo_mosaic.util import filter_season
 from landsat_cogeo_mosaic.validate import missing_quadkeys as _missing_quadkeys
 from landsat_cogeo_mosaic.visualize import visualize as _visualize
@@ -93,7 +93,7 @@ def search(
     """Retrieve features from sat-api
     """
     bounds = tuple(map(float, bounds.split(',')))
-    features = search(
+    features = _search(
         bounds=bounds,
         min_cloud=min_cloud,
         max_cloud=max_cloud,
