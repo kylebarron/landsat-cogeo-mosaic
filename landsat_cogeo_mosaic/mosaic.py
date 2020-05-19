@@ -95,6 +95,9 @@ def features_to_mosaicJSON(
         with gzip.open(path, 'rt') as f:
             index = json.load(f)
 
+    # Define quadkey zoom from index
+    quadkey_zoom = len(list(index.values())[0][0])
+
     pr_keys = set(index.keys())
     sorted_features = {}
     for feature in features:
