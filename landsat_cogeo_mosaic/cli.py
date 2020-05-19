@@ -363,17 +363,8 @@ def create_from_db(
     file_opener = gzip.open if pathrow_index.endswith('.gz') else open
     mode = 'rt' if pathrow_index.endswith('.gz') else 'r'
 
-    # Set jsonl to true if `.json` is in filename
-    jsonl = '.jsonl' in pathrow_index
-
     with file_opener(pathrow_index, mode) as f:
-        if jsonl:
-            pr_index = {}
-            for line in f:
-                pr_index.update(json.loads(line))
-
-        else:
-            pr_index = json.load(f)
+        pr_index = json.load(f)
 
     # Find quadkey zoom from index
     quadkey_zoom = len(list(pr_index.values())[0][0])
