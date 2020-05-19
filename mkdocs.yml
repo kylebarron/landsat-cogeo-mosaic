@@ -23,27 +23,9 @@ extra:
 # Layout
 nav:
   - Home: 'index.md'
-  # - Getting Started: 'getting_started.md'
-  # - Jupyter Notebook Example: 'https://nbviewer.jupyter.org/github/kylebarron/stata_kernel/blob/master/examples/Example.ipynb'
-  # - Using Jupyter:
-  #   - Introduction: 'using_jupyter/intro.md'
-  #   - JupyterLab: 'using_jupyter/lab.md'
-  #   - Hydrogen in Atom: 'using_jupyter/atom.md'
-  #   - Jupyter Notebook: 'using_jupyter/notebook.md'
-  #   - Nteract: 'using_jupyter/nteract.md'
-  #   - Jupyter QtConsole: 'using_jupyter/qtconsole.md'
-  #   - Jupyter Console: 'using_jupyter/console.md'
-  #   - Remote Servers: 'using_jupyter/remote.md'
-  # - Using the Stata Kernel:
-  #   - Introduction: 'using_stata_kernel/intro.md'
-  #   - Configuration: 'using_stata_kernel/configuration.md'
-  #   - Magics: 'using_stata_kernel/magics.md'
-  #   - Limitations: 'using_stata_kernel/limitations.md'
-  #   - Troubleshooting: 'using_stata_kernel/troubleshooting.md'
-  # - Comparison with IPyStata: 'comparison_with_ipystata.md'
-  # - Contributing: 'CONTRIBUTING.md'
-  # - Addendum: 'addendum.md'
-  # - License: 'license.md'
+  - Install: 'install.md'
+  - Examples:
+    - Global Basemap: 'examples/global.md'
 
 # Theme
 theme:
