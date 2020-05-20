@@ -127,9 +127,25 @@ def features_to_mosaicJSON(
             tiles[qk] = tiles.get(qk, set())
             tiles[qk].add(product_id)
 
+    bounds = quadkeys_to_bounds(tiles.keys())
+    mosaic = MosaicJSON(
+        mosaicjson="0.0.2",
+        minzoom=minzoom,
+        maxzoom=maxzoom,
+        quadkey_zoom=quadkey_zoom,
+        bounds=bounds,
+        tiles=tiles)
+    return mosaic.dict(exclude_none=True)
+
+
+def quadkeys_to_bounds(quadkeys: List[str]):
+    """Convert list of quadkeys to bounds
+
+    Args:
+        - quadkeys: List of quadkeys
+    """
     tile_bounds = [
-        mercantile.bounds(mercantile.quadkey_to_tile(qk))
-        for qk in tiles.keys()
+        mercantile.bounds(mercantile.quadkey_to_tile(qk)) for qk in quadkeys
     ]
 
     minx = 180
@@ -142,15 +158,7 @@ def features_to_mosaicJSON(
         maxx = max(maxx, tb[2])
         maxy = max(maxy, tb[3])
 
-    bounds = [minx, miny, maxx, maxy]
-    mosaic = MosaicJSON(
-        mosaicjson="0.0.2",
-        minzoom=minzoom,
-        maxzoom=maxzoom,
-        quadkey_zoom=quadkey_zoom,
-        bounds=bounds,
-        tiles=tiles)
-    return mosaic.dict(exclude_none=True)
+    return [minx, miny, maxx, maxy]
 
 
 class StreamingParser:
