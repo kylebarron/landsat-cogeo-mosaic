@@ -12,7 +12,7 @@ def index_data_path():
     pkg_path = 'data/pr_index.json.gz'
     lambda_root = os.getenv('LAMBDA_TASK_ROOT')
     if lambda_root:
-        return f'{lambda_root}/landsat_mosaic_latest/{pkg_path}'
+        return f'{lambda_root}/landsat_cogeo_mosaic/{pkg_path}'
 
     try:
         # pkg_resources isn't necessarily available in all environments
