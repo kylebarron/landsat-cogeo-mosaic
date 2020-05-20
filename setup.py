@@ -19,8 +19,11 @@ with open('requirements_dev.txt') as test_requirements_file:
 
 setup_requirements = ['setuptools >= 38.6.0', 'twine >= 1.11.0']
 
+extras = ["geopandas", "pandas", "shapely", "keplergl_cli"]
 extra_reqs = {
     "docs": ["mkdocs", "mkdocs-material"],
+    "cli": ["click", *extras],
+    "extras": extras
 }
 
 # yapf: disable

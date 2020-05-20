@@ -1,5 +1,5 @@
-click
+cogeo_mosaic>=3.0a3
 mercantile
 python-dateutil
 requests
-shapely
+rio_tiler>=2.0a7
