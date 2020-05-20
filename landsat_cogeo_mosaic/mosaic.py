@@ -60,18 +60,6 @@ def features_to_mosaicJSON(
         Mosaic Min Zoom.
     maxzoom : int, optional (default: 12)
         Mosaic Max Zoom.
-    optimized_selection : bool, optional (default: true)
-        Attempt to optimize assets in tile.
-
-        This optimization implies _both_ that
-
-        - assets will be ordered in the MosaicJSON in order of cover of the
-          entire tile
-        - the total number of assets is kept to a minimum
-
-        Computing the absolute minimum of assets to cover the tile may not in
-        general be possible in finite time, so this is a naive method that
-        should work relatively well for this use case.
 
     Returns
     -------

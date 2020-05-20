@@ -146,14 +146,6 @@ def search(
     default=None,
     help='Comma-separated bounding box: "west, south, east, north"')
 @click.option(
-    '--optimized-selection/--no-optimized-selection',
-    is_flag=True,
-    default=True,
-    show_default=True,
-    help=
-    'Attempt to optimize assets in tile. This optimization implies that 1) assets will be ordered in the MosaicJSON in order of cover of the entire tile and 2) the total number of assets is kept to a minimum.'
-)
-@click.option(
     '--season',
     multiple=True,
     default=None,
@@ -162,7 +154,7 @@ def search(
     help='Season, can provide multiple')
 @click.argument('lines', type=click.File())
 def create(
-        min_zoom, max_zoom, quadkey_zoom, bounds, optimized_selection, season,
+        min_zoom, max_zoom, quadkey_zoom, bounds, season,
         lines):
     """Create MosaicJSON from STAC features
     """
@@ -177,10 +169,8 @@ def create(
     mosaic = features_to_mosaicJSON(
         features=features,
         quadkey_zoom=quadkey_zoom,
-        bounds=bounds,
         minzoom=min_zoom,
-        maxzoom=max_zoom,
-        optimized_selection=optimized_selection)
+        maxzoom=max_zoom)
     print(json.dumps(mosaic, separators=(',', ':')))
 
 
