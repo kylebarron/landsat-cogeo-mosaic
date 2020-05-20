@@ -5,8 +5,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-from pkg_resources import resource_filename
-
 
 def index_data_path():
     """Find path to bundled pr_index.json.gz
@@ -17,8 +15,10 @@ def index_data_path():
         return f'{lambda_root}/landsat_mosaic_latest/{pkg_path}'
 
     try:
+        # pkg_resources isn't necessarily available in all environments
+        from pkg_resources import resource_filename
         return resource_filename('landsat_cogeo_mosaic', pkg_path)
-    except ModuleNotFoundError:
+    except (ImportError, ModuleNotFoundError):
         pass
 
     return str((Path(__file__) / pkg_path).resolve())
