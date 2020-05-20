@@ -10,12 +10,10 @@ with open('CHANGELOG.md') as history_file:
     history = history_file.read()
 
 with open('requirements.txt') as requirements_file:
-    requirements = requirements_file.readlines()
-    requirements = [x[:-1] for x in requirements]
+    requirements = [l.strip() for l in requirements_file]
 
 with open('requirements_dev.txt') as test_requirements_file:
-    test_requirements = test_requirements_file.readlines()
-    test_requirements = [x[:-1] for x in test_requirements]
+    test_requirements = [l.strip() for l in test_requirements_file]
 
 setup_requirements = ['setuptools >= 38.6.0', 'twine >= 1.11.0']
 
