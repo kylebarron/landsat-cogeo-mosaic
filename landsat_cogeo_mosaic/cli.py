@@ -186,111 +186,6 @@ def create(
 
 @click.command()
 @click.option(
-    '--min-zoom',
-    type=int,
-    required=False,
-    default=7,
-    show_default=True,
-    help='Minimum zoom')
-@click.option(
-    '--max-zoom',
-    type=int,
-    required=False,
-    default=12,
-    show_default=True,
-    help='Maximum zoom')
-@click.option(
-    '--quadkey-zoom',
-    type=int,
-    required=False,
-    default=None,
-    show_default=True,
-    help=
-    'Zoom level used for quadkeys in MosaicJSON. Lower value means more assets per tile, but a smaller MosaicJSON file. Higher value means fewer assets per tile but a larger MosaicJSON file. Must be between min zoom and max zoom, inclusive.'
-)
-@click.option(
-    '-b',
-    '--bounds',
-    type=str,
-    required=False,
-    default='-180,-90,180,90',
-    show_default=True,
-    help='Comma-separated bounding box: "west, south, east, north"')
-@click.option(
-    '--optimized-selection/--no-optimized-selection',
-    is_flag=True,
-    default=True,
-    show_default=True,
-    help=
-    'Optimize assets in tile. Only a single asset per path-row will be included in each quadkey. Note that there will usually be multiple path-rows within a single quadkey tile.'
-)
-@click.option(
-    '-p',
-    '--preference',
-    type=click.Choice(['newest', 'oldest', 'closest-to-date'],
-                      case_sensitive=False),
-    default='newest',
-    show_default=True,
-    help='Method for choosing scenes in the same path-row')
-@click.option(
-    '--closest-to-date',
-    type=str,
-    default=None,
-    help=
-    'Date used for comparisons when preference is closest-to-date. Format must be YYYY-MM-DD'
-)
-@click.option(
-    '--season',
-    multiple=True,
-    default=None,
-    show_default=True,
-    type=click.Choice(["spring", "summer", "autumn", "winter"]),
-    help='Season, can provide multiple')
-@click.argument('file', type=click.File())
-def create_streaming(
-        min_zoom, max_zoom, quadkey_zoom, bounds, optimized_selection,
-        preference, closest_to_date, season, file):
-    """Create MosaicJSON from STAC features without holding in memory
-    """
-    if bounds:
-        bounds = tuple(map(float, re.split(r'[, ]+', bounds)))
-
-    if (preference == 'closest-to-date') and (not closest_to_date):
-        msg = 'closest-to-date parameter required when preference is closest-to-date'
-        raise ValueError(msg)
-
-    streaming_parser = StreamingParser(
-        quadkey_zoom=quadkey_zoom,
-        bounds=bounds,
-        minzoom=min_zoom,
-        maxzoom=max_zoom,
-        preference=preference,
-        optimized_selection=optimized_selection,
-        closest_to_date=closest_to_date)
-
-    count = 0
-    for line in file:
-        count += 1
-        if count % 5000 == 0:
-            print(f'Feature: {count}', file=sys.stderr)
-
-        feature = json.loads(line)
-
-        # Filter by season
-        if season:
-            features = filter_season([feature], season)
-            if not features:
-                continue
-
-            feature = features[0]
-
-        streaming_parser.add(feature)
-
-    print(json.dumps(streaming_parser.mosaic, separators=(',', ':')))
-
-
-@click.command()
-@click.option(
     '--sqlite-path',
     type=click.Path(exists=True, readable=True),
     required=True,
@@ -406,7 +301,7 @@ def create_from_db(
                 record = next(it)
                 product_id = record['productId']
                 for quadkey in quadkeys:
-                    streaming_parser.tiles[quadkey].add(product_id)
+                    streaming_parser.add(quadkey, product_id)
                 break
             except StopIteration:
                 msg = f'No results for pathrow {pathrow} '
@@ -537,7 +432,6 @@ def visualize(wrs_path, mosaic_paths, api_key):
 
 main.add_command(create)
 main.add_command(create_from_db)
-main.add_command(create_streaming)
 main.add_command(index)
 main.add_command(missing_quadkeys)
 main.add_command(search)
