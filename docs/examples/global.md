@@ -103,8 +103,6 @@ landsat-cogeo-mosaic create-from-db \
     --min-zoom 7 \
     `# Max zoom of mosaic, 12 is a good default for Landsat` \
     --max-zoom 12 \
-    `# Zoom level to use for quadkeys` \
-    --quadkey-zoom 8 \
     `# Maximum cloud cover. This means 5%` \
     --max-cloud 5 \
     `# Preference for choosing the asset for a tile` \
