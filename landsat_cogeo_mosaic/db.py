@@ -64,6 +64,11 @@ def generate_query(
     where_clause.append(f'pathrow = "{pathrow}"')
 
     if min_date:
+        # Make sure min_date is >= when Landsat8 reached operational orbit
+        min_date = coerce_to_datetime(min_date)
+        min_date = max(min_date, LANDSAT8_MIN_DATE)
+        min_date = datetime.strftime(min_date, "%Y-%m-%d")
+
         where_clause.append(f'DATE(acquisitionDate) >= DATE("{min_date}")')
 
     if max_date:
