@@ -1,4 +1,3 @@
-import gzip
 import json
 import re
 import sys
@@ -11,7 +10,7 @@ from landsat_cogeo_mosaic.index import create_index
 from landsat_cogeo_mosaic.mosaic import create_from_db as _create_from_db
 from landsat_cogeo_mosaic.mosaic import features_to_mosaicJSON
 from landsat_cogeo_mosaic.stac import search as _search
-from landsat_cogeo_mosaic.util import filter_season, index_data_path
+from landsat_cogeo_mosaic.util import filter_season, load_index_data
 from landsat_cogeo_mosaic.validate import missing_quadkeys as _missing_quadkeys
 from landsat_cogeo_mosaic.visualize import visualize as _visualize
 
@@ -243,16 +242,7 @@ def create_from_db(
         msg = 'closest-to-date parameter required when sort_preference is closest-to-date'
         raise ValueError(msg)
 
-    # Load index from inside package if not provided
-    pathrow_index = pathrow_index or index_data_path()
-
-    # Use gzip file opener if path ends with .gz
-    file_opener = gzip.open if pathrow_index.endswith('.gz') else open
-    mode = 'rt' if pathrow_index.endswith('.gz') else 'r'
-
-    with file_opener(pathrow_index, mode) as f:
-        pr_index = json.load(f)
-
+    pr_index = load_index_data(pathrow_index)
     mosaic = _create_from_db(
         sqlite_path=sqlite_path,
         pr_index=pr_index,

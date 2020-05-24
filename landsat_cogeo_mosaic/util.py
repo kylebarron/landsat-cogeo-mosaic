@@ -1,3 +1,4 @@
+import gzip
 import hashlib
 import json
 import os
@@ -13,6 +14,20 @@ def coerce_to_datetime(dt):
         return dt
 
     return date_parse(dt)
+
+
+def load_index_data(path=None):
+    # Load index from inside package if not provided
+    path = path or index_data_path()
+
+    # Use gzip file opener if path ends with .gz
+    file_opener = gzip.open if path.endswith('.gz') else open
+    mode = 'rt' if path.endswith('.gz') else 'r'
+
+    with file_opener(path, mode) as f:
+        pr_index = json.load(f)
+
+    return pr_index
 
 
 def index_data_path():
