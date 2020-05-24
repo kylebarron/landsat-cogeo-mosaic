@@ -2,23 +2,16 @@ import sqlite3
 from datetime import datetime
 from typing import Dict, Iterable, List, Optional, Union
 
-from dateutil.parser import parse as date_parse
+from landsat_cogeo_mosaic.constants import LANDSAT8_MIN_DATE
+from landsat_cogeo_mosaic.util import coerce_to_datetime
 
 
-def find_records(sqlite_path, **kwargs) -> Iterable[Dict]:
+def find_records(sqlite_path, query) -> Iterable[Dict]:
     """Find records for query from sqlite
 
     Args:
-        - pathrow: 6-character pathrow
-        - table_name: name of table in sqlite. Default 'scene_list'
-        - max_cloud: maximum cloud cover percent. Range from 0-100.
-        - min_date: min date as str: 'YYYY-MM-DD'
-        - max_date: max date as str: 'YYYY-MM-DD'
-        - preference: preference for selecting pathrow
-        - tier_preference: preference of tiers, by default ['T1', 'T2', 'RT']
-        - closest_to_date: datetime used for comparisons when preference is closest-to-date. Must be datetime or str of format YYYY-MM-DD
-        - limit: Max number of results to return
-        - columns: columns to return
+        - sqlite_path: Path to sqlite database
+        - query: query as string
 
     Returns:
         iterator that creates dict records
@@ -27,9 +20,7 @@ def find_records(sqlite_path, **kwargs) -> Iterable[Dict]:
     # https://stackoverflow.com/a/18788347
     conn = sqlite3.connect(sqlite_path)
     conn.row_factory = sqlite3.Row
-
-    query_str = generate_query(**kwargs)
-    return run_query(conn, query_str)
+    return run_query(conn, query)
 
 
 def generate_query(
@@ -143,10 +134,3 @@ def run_query(conn, query_str: str) -> Dict:
     cursor = conn.execute(query_str)
     for row in cursor:
         yield {k: row[k] for k in row.keys()}
-
-
-def coerce_to_datetime(dt):
-    if isinstance(dt, datetime):
-        return dt
-
-    return date_parse(dt)

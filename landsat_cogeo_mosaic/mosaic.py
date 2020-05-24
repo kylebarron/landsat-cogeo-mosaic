@@ -29,13 +29,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import gzip
 import json
+import sys
+from datetime import datetime
 from typing import Dict, List, Optional, Set, Union
 
 import mercantile
 from cogeo_mosaic.mosaic import MosaicJSON
 from rio_tiler.io.landsat8 import landsat_parser
 
-from landsat_cogeo_mosaic.util import index_data_path
+from landsat_cogeo_mosaic.db import find_records, generate_query
+from landsat_cogeo_mosaic.util import coerce_to_datetime, index_data_path
 
 
 def landsat_accessor(feature: Dict):
@@ -144,6 +147,95 @@ def quadkeys_to_bounds(quadkeys: List[str]):
         maxy = max(maxy, tb[3])
 
     return [minx, miny, maxx, maxy]
+
+
+def create_from_db(
+        sqlite_path, pr_index, max_cloud, min_date, max_date, min_zoom,
+        max_zoom, sort_preference, closest_to_date):
+    """Create MosaicJSON from SQLite database of Landsat features
+    """
+    quadkey_zoom = len(list(pr_index.values())[0][0])
+    streaming_parser = StreamingParser(
+        quadkey_zoom=quadkey_zoom, minzoom=min_zoom, maxzoom=max_zoom)
+
+    count = 0
+    for pathrow, quadkeys in pr_index.items():
+        count += 1
+        if count % 1000 == 0:
+            print(f'Pathrow: {count}', file=sys.stderr)
+
+        asset = find_asset_for_pathrow(
+            sqlite_path,
+            pathrow=pathrow,
+            max_cloud=max_cloud,
+            min_date=min_date,
+            max_date=max_date,
+            sort_preference=sort_preference,
+            closest_to_date=closest_to_date)
+        product_id = asset['productId']
+        for quadkey in quadkeys:
+            streaming_parser.add(quadkey, product_id)
+
+    return streaming_parser.mosaic
+
+
+def find_asset_for_pathrow(sqlite_path, **kwargs):
+    """Find asset from database for pathrow
+
+    The querying is done inside a loop, so that if the query returns no results,
+    it can be repeated with relaxed parameters.
+
+    Args:
+        - sqlite_path: Path to sqlite database
+        - kwargs: Arguments passed to db.generate_query
+    """
+    while True:
+        # Generate query
+        query = generate_query(**kwargs)
+
+        # Find records for query
+        iterator = find_records(sqlite_path, query)
+
+        # Return if found
+        try:
+            return next(iterator)
+        except StopIteration:
+            if kwargs.get('max_cloud') >= 100 and kwargs.get(
+                    'sort_preference') == 'closest-to-date':
+
+                pathrow = kwargs.get('pathrow')
+                print(
+                    f'Unable to find assets for pathrow {pathrow}',
+                    file=sys.stderr)
+                return
+
+        # Modify parameters
+        kwargs = relax_params(**kwargs)
+
+
+def relax_params(**kwargs):
+    """Relax search parameters if not found
+    """
+    max_cloud = kwargs.get('max_cloud', 0)
+    if max_cloud < 100:
+        max_cloud += 5
+        kwargs['max_cloud'] = max_cloud
+        pathrow = kwargs['pathrow']
+        print(
+            f'Trying again with max_cloud {max_cloud} for pathrow={pathrow}',
+            file=sys.stderr)
+        return kwargs
+
+    # Otherwise, do a "last-ditch" of the closest to the midpoint date
+    min_date = coerce_to_datetime(kwargs.get('min_date', '2013-04-11'))
+    max_date = coerce_to_datetime(kwargs.get('max_date', datetime.today()))
+
+    midpoint_date = min_date + ((max_date - min_date) / 2)
+    kwargs['min_date'] = None
+    kwargs['max_date'] = None
+    kwargs['closest_to_date'] = midpoint_date
+    kwargs['sort_preference'] = 'closest-to-date'
+    return kwargs
 
 
 class StreamingParser:

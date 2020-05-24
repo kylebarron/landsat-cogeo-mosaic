@@ -5,6 +5,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
+from dateutil.parser import parse as date_parse
+
+
+def coerce_to_datetime(dt):
+    if isinstance(dt, datetime):
+        return dt
+
+    return date_parse(dt)
+
 
 def index_data_path():
     """Find path to bundled pr_index.json.gz

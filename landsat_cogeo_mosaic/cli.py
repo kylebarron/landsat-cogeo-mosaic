@@ -7,9 +7,9 @@ from pathlib import Path
 
 import click
 
-from landsat_cogeo_mosaic.db import find_records
 from landsat_cogeo_mosaic.index import create_index
-from landsat_cogeo_mosaic.mosaic import StreamingParser, features_to_mosaicJSON
+from landsat_cogeo_mosaic.mosaic import create_from_db as _create_from_db
+from landsat_cogeo_mosaic.mosaic import features_to_mosaicJSON
 from landsat_cogeo_mosaic.stac import search as _search
 from landsat_cogeo_mosaic.util import filter_season, index_data_path
 from landsat_cogeo_mosaic.validate import missing_quadkeys as _missing_quadkeys
@@ -153,9 +153,7 @@ def search(
     type=click.Choice(["spring", "summer", "autumn", "winter"]),
     help='Season, can provide multiple')
 @click.argument('lines', type=click.File())
-def create(
-        min_zoom, max_zoom, quadkey_zoom, bounds, season,
-        lines):
+def create(min_zoom, max_zoom, quadkey_zoom, bounds, season, lines):
     """Create MosaicJSON from STAC features
     """
     if bounds:
@@ -255,57 +253,18 @@ def create_from_db(
     with file_opener(pathrow_index, mode) as f:
         pr_index = json.load(f)
 
-    # Find quadkey zoom from index
-    quadkey_zoom = len(list(pr_index.values())[0][0])
-    streaming_parser = StreamingParser(
-        quadkey_zoom=quadkey_zoom, minzoom=min_zoom, maxzoom=max_zoom)
+    mosaic = _create_from_db(
+        sqlite_path=sqlite_path,
+        pr_index=pr_index,
+        max_cloud=max_cloud,
+        min_date=min_date,
+        max_date=max_date,
+        min_zoom=min_zoom,
+        max_zoom=max_zoom,
+        sort_preference=sort_preference,
+        closest_to_date=closest_to_date)
 
-    # Copy max_cloud into constant that won't get modified
-    MAX_CLOUD = max_cloud
-    count = 0
-    for pathrow, quadkeys in pr_index.items():
-        count += 1
-        if count % 1000 == 0:
-            print(f'Pathrow: {count}', file=sys.stderr)
-
-        # Reset max_cloud
-        max_cloud = MAX_CLOUD
-
-        # In some equatorial regions, there are no results for max_cloud<=5
-        # So if there are no results, increase max_cloud and try again
-        while True:
-            it = find_records(
-                sqlite_path,
-                pathrow=pathrow,
-                table_name='scene_list',
-                max_cloud=max_cloud,
-                min_date=min_date,
-                max_date=max_date,
-                sort_preference=sort_preference,
-                closest_to_date=closest_to_date,
-                columns=['productId'])
-
-            # Add first record found to each quadkey in the pathrow-quadkey
-            # index
-            try:
-                record = next(it)
-                product_id = record['productId']
-                for quadkey in quadkeys:
-                    streaming_parser.add(quadkey, product_id)
-                break
-            except StopIteration:
-                msg = f'No results for pathrow {pathrow} '
-                if max_cloud >= 100:
-                    print(msg, file=sys.stderr)
-                    break
-
-                # No results from query
-                # Increase cloud cover and try again
-                max_cloud += 5
-                msg += f'Trying again with max_cloud {max_cloud}'
-                print(msg, file=sys.stderr)
-
-    print(json.dumps(streaming_parser.mosaic, separators=(',', ':')))
+    print(json.dumps(mosaic, separators=(',', ':')))
 
 
 @click.command()
