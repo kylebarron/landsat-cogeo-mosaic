@@ -4,12 +4,14 @@ Tools to create MosaicJSONs for Landsat imagery.
 
 ## Overview
 
-A [MosaicJSON](https://github.com/developmentseed/mosaicjson-spec) is a file
-that defines how to combine multiple (satellite) imagery assets across time and
-space into a web mercator tile. This repository is designed to be used to create
-such files, so that they can be used for on-the-fly satellite tile generation,
-such as with
-[`awspds-mosaic`](https://github.com/developmentseed/awspds-mosaic).
+A [MosaicJSON][mosaicjson-spec] is a file that defines how to combine multiple
+(satellite) imagery assets across time and space into a web mercator tile. This
+repository is designed to be used to create such files, so that they can be used
+for on-the-fly satellite tile generation, such as with
+[`landsat-mosaic-tiler`][landsat-mosaic-tiler].
+
+[mosaicjson-spec]: https://github.com/developmentseed/mosaicjson-spec
+[landsat-mosaic-tiler]: https://github.com/kylebarron/landsat-mosaic-tiler
 
 ## Install
 

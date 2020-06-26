@@ -4,6 +4,18 @@ I'm interested in creating a global, cloudless basemap for each season.
 
 ### Low-cloud per season
 
+By using my "last-ditch" query process, every mosaic will have the same number
+of quadkeys. You can verify that with:
+
+```bash
+for file in $(find . -type f -name '*.json'); do
+    cat $file | jq '.tiles | keys' | wc -l;
+done
+# 36265
+# 36265
+# ...
+```
+
 #### Spring
 
 ```bash
@@ -71,8 +83,6 @@ mkdir -p data/out/
 for year in {2014..2020}; do
     min_date="$((year - 1))-12-21"
     max_date="${year}-03-21"
-    # echo $min_date
-    # echo $max_date
     landsat-cogeo-mosaic create-from-db \
         --sqlite-path data/scene_list.db \
         --pathrow-index data/pr_index.json.gz \

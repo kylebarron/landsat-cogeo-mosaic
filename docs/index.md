@@ -8,7 +8,7 @@ MosaicJSON files.
 [MosaicJSON][mosaicjson] is a specification that defines how to combine multiple
 (satellite) imagery assets across time and space into web mercator tiles. These
 files can then be used for on-the-fly satellite tile generation, using
-[`awspds-mosaic`][awspds-mosaic].
+[`landsat-mosaic-tiler`][landsat-mosaic-tiler].
 
 [mosaicjson]: https://github.com/developmentseed/mosaicjson-spec
-[awspds-mosaic]: https://github.com/developmentseed/awspds-mosaic
+[landsat-mosaic-tiler]: https://github.com/developmentseed/landsat-mosaic-tiler
