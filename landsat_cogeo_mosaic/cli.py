@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 
+from landsat_cogeo_mosaic.grid import generate_grid
 from landsat_cogeo_mosaic.index import create_index
 from landsat_cogeo_mosaic.mosaic import create_from_db as _create_from_db
 from landsat_cogeo_mosaic.mosaic import features_to_mosaicJSON
@@ -303,6 +304,50 @@ def index(wrs_path, scene_path, bounds, quadkey_zoom):
 
 @click.command()
 @click.option(
+    '--wrs-path',
+    required=True,
+    type=click.Path(exists=True, readable=True),
+    help=
+    'Path to Shapefile (.shp) of WRS2 polygons. You can download then extract from here https://www.usgs.gov/media/files/landsat-wrs-2-descending-path-row-shapefile'
+)
+@click.option(
+    '-o',
+    '--out-path',
+    required=True,
+    type=click.Path(exists=False, writable=True),
+    help='Path of new SQLite DB. Will overwrite any existing file.')
+@click.option(
+    '--pr-index',
+    type=click.Path(exists=True, readable=True),
+    required=False,
+    default=None,
+    show_default=True,
+    help=
+    'Pathrow index JSON file to use for filtering pathrows in DB. Useful, for example, to include only pathrows over land.'
+)
+@click.option(
+    '-b',
+    '--bounds',
+    type=str,
+    default=None,
+    show_default=True,
+    help='force bounding box: "west, south, east, north"')
+def grid(wrs_path, out_path, pr_index, bounds):
+    """Generate WRS2 Grid as SQLite DB
+    """
+    if bounds:
+        bounds = tuple(map(float, bounds.split(',')))
+
+    pathrows = None
+    if pr_index:
+        with open(pr_index) as f:
+            pathrows = json.load(f).keys()
+
+    generate_grid(wrs_path, out_path, pathrows=pathrows, bounds=bounds)
+
+
+@click.command()
+@click.option(
     '--shp-path',
     required=True,
     type=click.Path(exists=True, readable=True),
@@ -371,6 +416,7 @@ def visualize(wrs_path, mosaic_paths, api_key):
 
 main.add_command(create)
 main.add_command(create_from_db)
+main.add_command(grid)
 main.add_command(index)
 main.add_command(missing_quadkeys)
 main.add_command(search)
