@@ -11,4 +11,4 @@ files can then be used for on-the-fly satellite tile generation, using
 [`landsat-mosaic-tiler`][landsat-mosaic-tiler].
 
 [mosaicjson]: https://github.com/developmentseed/mosaicjson-spec
-[landsat-mosaic-tiler]: https://github.com/developmentseed/landsat-mosaic-tiler
+[landsat-mosaic-tiler]: https://github.com/kylebarron/landsat-mosaic-tiler
