@@ -6,7 +6,7 @@ from typing import Dict, List
 import geopandas as gpd
 import pandas as pd
 from keplergl_cli import Visualize
-from rio_tiler.io.landsat8 import landsat_parser
+from rio_tiler_pds.landsat.utils import sceneid_parser
 
 
 def visualize(
@@ -46,7 +46,7 @@ def get_mosaic_geometries(mosaic, gdf):
         all_assets.update(assets)
 
     assets_df = pd.DataFrame(all_assets, columns=['asset'])
-    meta = pd.DataFrame.from_records(assets_df['asset'].apply(landsat_parser))
+    meta = pd.DataFrame.from_records(assets_df['asset'].apply(sceneid_parser))
     meta['pathrow'] = meta['path'].str.zfill(3) + meta['row'].str.zfill(3)
     assets_df = pd.concat([assets_df, meta], axis=1)
     # Drop asset, in favor of identical `scene` column

@@ -35,7 +35,7 @@ from typing import Dict, List, Optional, Set, Union
 
 import mercantile
 from cogeo_mosaic.mosaic import MosaicJSON
-from rio_tiler.io.landsat8 import landsat_parser
+from rio_tiler_pds.landsat.utils import sceneid_parser
 
 from landsat_cogeo_mosaic.db import find_records, generate_query
 from landsat_cogeo_mosaic.util import coerce_to_datetime, index_data_path
@@ -282,7 +282,7 @@ class StreamingParser:
         num_duplicate_assets = 0
         for assets in self.tiles.values():
             n_assets = len(assets)
-            metas = [landsat_parser(asset) for asset in assets]
+            metas = [sceneid_parser(asset) for asset in assets]
 
             pathrows = {meta['path'] + meta['row'] for meta in metas}
             if n_assets != len(pathrows):
