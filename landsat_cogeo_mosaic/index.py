@@ -1,6 +1,7 @@
 """
 landsat_cogeo_mosaic.index.py: Create optimized path-row to quadkey index
 """
+import warnings
 from typing import List
 
 import geopandas as gpd
@@ -90,8 +91,12 @@ def optimize_group(group, quadkey):
 
     while True:
         # Find intersection percent
-        group['int_pct'] = group.geometry.intersection(
-            tile_geom).area / tile_geom.area
+        # Catch warnings about using a geographic CRS
+        # https://stackoverflow.com/a/9134842/7319250
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            group['int_pct'] = group.geometry.intersection(
+                tile_geom).area / tile_geom.area
 
         # Remove features with no tile overlap
         group = group.loc[group['int_pct'] > 0]
