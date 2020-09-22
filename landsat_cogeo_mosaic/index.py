@@ -1,13 +1,12 @@
 """
 landsat_cogeo_mosaic.index.py: Create optimized path-row to quadkey index
 """
-import warnings
 from typing import List
 
 import geopandas as gpd
 import mercantile
 import pandas as pd
-from shapely.geometry import asShape
+from shapely.geometry import asShape, box
 
 
 def create_index(pathrow_path, scene_path, bounds, quadkey_zoom):
@@ -66,12 +65,16 @@ def optimize_index(gdf):
     Args:
         - gdf: joined GeoDataFrame
     """
+    # Reproject to web mercator to use a projected CRS for tile geometry
+    # intersections
+    gdf = gdf.to_crs(epsg=3857)
+
     # List to collect results
     res_df = []
     for quadkey, group in gdf.groupby('quadkey'):
         res_df.append(optimize_group(group, quadkey))
 
-    return pd.concat(res_df)
+    return pd.concat(res_df).set_crs(crs=3857).to_crs(epsg=4326)
 
 
 def optimize_group(group, quadkey):
@@ -86,17 +89,13 @@ def optimize_group(group, quadkey):
     Returns group also sorted with respect to intersection of entire tile.
     """
     tile = mercantile.quadkey_to_tile(quadkey)
-    tile_geom = asShape(mercantile.feature(tile)['geometry'])
+    tile_geom = box(*mercantile.xy_bounds(tile))
     final_assets = []
 
     while True:
         # Find intersection percent
-        # Catch warnings about using a geographic CRS
-        # https://stackoverflow.com/a/9134842/7319250
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            group['int_pct'] = group.geometry.intersection(
-                tile_geom).area / tile_geom.area
+        group['int_pct'] = group.geometry.intersection(
+            tile_geom).area / tile_geom.area
 
         # Remove features with no tile overlap
         group = group.loc[group['int_pct'] > 0]
