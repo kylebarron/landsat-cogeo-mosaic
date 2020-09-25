@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.2.1] - 2020-09-21
+
+- Reproject to web mercator for intersection computations when creating index file
+
 ## [0.2.0] - 2020-09-13
 
 - Update for rio-tiler v2
