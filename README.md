@@ -16,12 +16,14 @@ for on-the-fly satellite tile generation, such as with
 ## Install
 
 ```bash
-git clone https://github.com/kylebarron/landsat-cogeo-mosaic
-cd landsat-cogeo-mosaic
-pip install .
+pip install landsat-cogeo-mosaic
 ```
 
-For other parts below, you may need SQLite installed.
+For CLI commands and some modules, you need additional dependencies:
+
+```bash
+pip install 'landsat-cogeo-mosaic[cli]'
+```
 
 ## Create Mosaics
 
